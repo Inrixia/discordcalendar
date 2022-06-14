@@ -15,7 +15,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 			<DiscordOAuthProvider clientId={clientId} scope={scope} redirect_uri={redirectUri}>
 				<Routes>
 					<Route path="/" element={<Home />} />
-					<Route path="/loginCallback" element={<Home />} />
 					<Route element={<Error404 />} />
 				</Routes>
 			</DiscordOAuthProvider>
