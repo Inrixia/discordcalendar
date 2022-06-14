@@ -66,6 +66,13 @@ export const DiscordOAuthProvider = (props: DiscordOAuthProviderProps) => {
 				removeHash();
 				break;
 			}
+			case AuthStage.Authenticated: {
+				if (tokenContext.accessToken === null) {
+					setAuthStage(AuthStage.Unauthenticated);
+					hasToken.current = false;
+				}
+				break;
+			}
 		}
 	}, [props]);
 

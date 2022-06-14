@@ -3,5 +3,5 @@ import { useDiscordOAuth } from "./DiscordOAuthProvider";
 export const Home = () => {
 	const discordInfo = useDiscordOAuth();
 	console.log(discordInfo);
-	return <>Hello There</>;
+	return <>Hello {discordInfo.accessToken || "No Token"}</>;
 };
