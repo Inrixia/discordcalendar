@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useRef, useState } from "react";
 
-export type DiscordOAuthProviderProps = { clientId: string; scope: string; redirect_uri: string; children: ReactNode };
+export type DiscordOAuthProviderProps = { clientId: string; scope: string[]; redirect_uri: string; children: ReactNode };
 
 enum AuthStage {
 	Unauthenticated = "-1",
@@ -31,9 +31,8 @@ const DiscordOAuthContext = createContext<AuthContext>(nullAuthContext);
 const removeHash = () => window.history.pushState("", document.title, window.location.pathname + window.location.search);
 
 export const DiscordOAuthProvider = (props: DiscordOAuthProviderProps) => {
-	const [tokenContext, setTokenContext] = useState<AuthContext>(nullAuthContext);
-
 	const hasToken = useRef(false);
+	const [tokenContext, setTokenContext] = useState<AuthContext>(nullAuthContext);
 
 	useEffect(() => {
 		if (hasToken.current) return;
@@ -44,7 +43,7 @@ export const DiscordOAuthProvider = (props: DiscordOAuthProviderProps) => {
 				redirectUrl.searchParams.append("state", setDiscordState());
 				redirectUrl.searchParams.append("response_type", "token");
 				redirectUrl.searchParams.append("client_id", props.clientId);
-				redirectUrl.searchParams.append("scope", props.scope);
+				redirectUrl.searchParams.append("scope", props.scope.join(" "));
 				redirectUrl.searchParams.append("redirect_uri", props.redirect_uri);
 
 				setAuthStage(AuthStage.Loading);
@@ -57,12 +56,11 @@ export const DiscordOAuthProvider = (props: DiscordOAuthProviderProps) => {
 				if (discordState !== null && discordState !== hash.get("state")) break;
 				clearDiscordState();
 				setAuthStage(AuthStage.Authenticated);
-				const hashInfo = {
+				setTokenContext({
 					tokenType: hash.get("token_type"),
 					accessToken: hash.get("access_token"),
 					scope: hash.get("scope"),
-				};
-				setTokenContext(hashInfo);
+				});
 				removeHash();
 				break;
 			}
@@ -71,12 +69,14 @@ export const DiscordOAuthProvider = (props: DiscordOAuthProviderProps) => {
 					setAuthStage(AuthStage.Unauthenticated);
 					hasToken.current = false;
 				}
-				break;
 			}
 		}
 	}, [props]);
 
-	return <DiscordOAuthContext.Provider value={useMemo(() => tokenContext, [tokenContext])}>{props.children}</DiscordOAuthContext.Provider>;
+	const memoContext = useMemo(() => tokenContext, [tokenContext]);
+
+	if (!hasToken.current) return null;
+	return <DiscordOAuthContext.Provider value={memoContext}>{props.children}</DiscordOAuthContext.Provider>;
 };
 
 export const useDiscordOAuth = () => {

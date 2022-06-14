@@ -6,7 +6,7 @@ import { Error404 } from "./GenericPages";
 import { Home } from "./Home";
 
 const clientId = "982998156558078022";
-const scope = "identify guilds";
+const scope = ["identify", "guilds"];
 const redirectUri = "http://localhost:3000";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
