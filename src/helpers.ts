@@ -1,10 +1,10 @@
 import { RouteBases } from "discord-api-types/v9";
 
-type ImageSize = 16 | 32 | 64 | 128 | 256 | 512 | 1024 | 2048 | 4096;
-type ImageFormat = "jpg" | "png" | "webp" | "gif";
-type CDNBase = "icons" | "emojis" | "avatars" | "app-icons";
+export type ImageSize = 16 | 32 | 64 | 128 | 256 | 512 | 1024 | 2048 | 4096;
+export type ImageFormat = "jpg" | "png" | "webp" | "gif";
+export type CDNBase = "icons" | "emojis" | "avatars" | "app-icons";
 
-export const imgUrl = (base: CDNBase = "icons", id: string, hash: string, format: ImageFormat = "gif", size: ImageSize = 64): string => {
+export const imgUrl = (base: CDNBase = "icons", id: string, hash: string, size: ImageSize = 64, format: ImageFormat = "gif"): string => {
 	// In the case of endpoints that support GIFs, the hash will begin with a_ if it is available in GIF format.
 	// If not default to webp
 	if (!hash.startsWith("a_")) format = "webp";

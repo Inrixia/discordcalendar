@@ -11,7 +11,7 @@ import {
 	APIGuildScheduledEvent,
 } from "discord-api-types/v10";
 
-import { APIBase, APIRoutes, imgUrl } from "./helpers";
+import { APIBase, APIRoutes, ImageSize, imgUrl } from "./helpers";
 import { fetchWithTimeout } from "@inrixia/cfworker-helpers";
 
 import "react-big-calendar/lib/css/react-big-calendar.css";
@@ -121,12 +121,12 @@ export const Home = () => {
 		(event): CalendarEvent => ({
 			title: (
 				<>
-					{guilds && <GuildIcon guild={guilds[event.guild_id]} />}
+					{guilds && <GuildIcon guild={guilds[event.guild_id]} size={24} />}
 					{event.name}
 				</>
 			),
 			start: event.scheduled_start_time ? new Date(event.scheduled_start_time) : undefined,
-			end: event.scheduled_end_time ? new Date(event.scheduled_end_time) : undefined,
+			end: event.scheduled_end_time ? new Date(event.scheduled_end_time) : new Date(new Date(event.scheduled_start_time).getTime() + 1000 * 60 * 60),
 		})
 	);
 
@@ -204,19 +204,26 @@ export const Home = () => {
 				</List>
 			</Drawer>
 			<GuildModal modalOpen={modalOpen} onClose={handleModalClose} guild={modalGuild} />
-			<Calendar localizer={localizer} events={calendarEvents} startAccessor="start" endAccessor="end" style={{ height: "100vh", width: "100%", padding: 16 }} />
+			<Calendar
+				dayLayoutAlgorithm="overlap"
+				localizer={localizer}
+				events={calendarEvents}
+				startAccessor="start"
+				endAccessor="end"
+				style={{ height: "100vh", width: "100%", padding: 16 }}
+			/>
 		</div>
 	);
 };
 
-const GuildIcon = ({ guild }: { guild: Guild }) => (
+const GuildIcon = ({ guild, size }: { guild: Guild; size?: number }) => (
 	<Tooltip
 		title={guild.name}
 		arrow
 		placement="right"
 		componentsProps={{ tooltip: { style: { background: "#18191C" } }, arrow: { style: { color: "#18191C" } } }}
 	>
-		<Avatar src={guild.icon ? imgUrl("icons", guild.id, guild.icon) : ""} style={{ marginRight: 16 }}>
+		<Avatar src={guild.icon ? imgUrl("icons", guild.id, guild.icon) : ""} style={{ marginRight: 16, width: size, height: size }}>
 			{guild.name[0].toUpperCase()}
 		</Avatar>
 	</Tooltip>
