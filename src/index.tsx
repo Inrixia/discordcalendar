@@ -9,7 +9,7 @@ import { OAuth2Scopes } from "discord-api-types/v10";
 import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
 
 const scope = [OAuth2Scopes.Identify, OAuth2Scopes.Guilds];
-const redirectUri = "http://localhost:3000";
+const redirectUri = window.location.origin;
 
 const theme = createTheme({
 	palette: {
