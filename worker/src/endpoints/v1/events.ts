@@ -16,8 +16,7 @@ events.get("/", async (req: SRequest) => {
 	const ids = new URL(req.url).searchParams.get("guildIds");
 	if (ids === null) return genericResponse(400);
 
-	const eventsArray = await Promise.all(ids.split(",").map(async (id) => ({ [id]: await getEvents(id, req.env.auth) })));
-	const guildEvents = eventsArray.reduce((acc, event) => ({ ...acc, ...event }));
-
-	return jsonResponse(guildEvents);
+	const guildEvents = await Promise.all(ids.split(",").flatMap((id) => getEvents(id, req.env.auth)));
+	// Flatmap to compact into a single array
+	return jsonResponse(guildEvents.flatMap((events) => events));
 });

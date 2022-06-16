@@ -8,13 +8,14 @@ import {
 	RESTGetAPIUserResult as User,
 	RESTGetAPICurrentUserGuildsResult as Guilds,
 	RESTGetAPIGuildScheduledEventsResult,
+	APIGuildScheduledEvent,
 } from "discord-api-types/v10";
 
 import { APIBase, APIRoutes, imgUrl } from "./helpers";
 import { fetchWithTimeout } from "@inrixia/cfworker-helpers";
 
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { Calendar, momentLocalizer } from "react-big-calendar";
+import { Calendar, momentLocalizer, Event as CalendarEvent } from "react-big-calendar";
 import moment from "moment";
 import { Divider, List, ListItem, Avatar, Typography, ListItemButton, ListItemText, Tooltip, Modal, Box, useTheme, Button } from "@mui/material";
 import { getDrawerHelpers } from "./Drawer";
@@ -38,7 +39,8 @@ const guildReducer = (state: Record<string, boolean>, action: { type: "add" | "r
 		case "add":
 			return setSelectedGuilds({ ...state, [action.id]: true });
 		case "remove":
-			return setSelectedGuilds({ ...state, [action.id]: false });
+			delete state[action.id];
+			return setSelectedGuilds(state);
 		default:
 			throw new Error("No action specified for guildReducer!");
 	}
@@ -64,7 +66,7 @@ export const Home = () => {
 	const headers = { Authorization: `${discordInfo.tokenType} ${discordInfo.accessToken}` };
 
 	const [user, setUser] = useState<User>();
-	const [guilds, setGuilds] = useState<Guilds>();
+	const [guilds, setGuilds] = useState<Record<string, Guild>>();
 
 	const [selectedGuilds, dispatchSelected] = useReducer(guildReducer, getSelectedDefaults());
 	type BotGuilds = Record<string, 0>;
@@ -89,6 +91,7 @@ export const Home = () => {
 		// Fetch user guilds
 		fetchWithTimeout(`${RouteBases.api}/${Routes.userGuilds()}`, { headers })
 			.then((result) => result.json<Guilds>())
+			.then((guilds) => guilds.reduce((guilds, guild) => ({ ...guilds, [guild.id]: guild }), {} as Record<string, Guild>))
 			.then(setGuilds)
 			.catch(console.error);
 
@@ -99,7 +102,7 @@ export const Home = () => {
 			.catch(console.error);
 	}, []);
 
-	type GuildEvents = Record<string, RESTGetAPIGuildScheduledEventsResult>;
+	type GuildEvents = APIGuildScheduledEvent[];
 	const [events, setEvents] = useState<GuildEvents>();
 
 	useEffect(() => {
@@ -107,10 +110,23 @@ export const Home = () => {
 		eventsUrl.searchParams.append("guildIds", Object.keys(selectedGuilds).join(","));
 		// Fetch guild events
 		fetch(eventsUrl)
-			.then((result) => result.json<BotGuilds>())
-			.then(setBotGuilds)
+			.then((result) => result.json<GuildEvents>())
+			.then(setEvents)
 			.catch(console.error);
 	}, [selectedGuilds]);
+
+	const calendarEvents = (events || []).map(
+		(event): CalendarEvent => ({
+			title: (
+				<>
+					{guilds && <GuildIcon guild={guilds[event.guild_id]} />}
+					{event.name}
+				</>
+			),
+			start: event.scheduled_start_time ? new Date(event.scheduled_start_time) : undefined,
+			end: event.scheduled_end_time ? new Date(event.scheduled_end_time) : undefined,
+		})
+	);
 
 	const onSelectGuild = (guild: Guild, isSelected: boolean) => {
 		if (botGuilds === undefined) return;
@@ -173,7 +189,7 @@ export const Home = () => {
 				<Divider />
 				<List style={{ width: 256 }}>
 					{guilds &&
-						guilds?.map((guild) => {
+						Object.values(guilds)?.map((guild) => {
 							const isSelected = selectedGuilds[guild.id] === true;
 							return (
 								<ListItemButton key={guild.id} onClick={() => onSelectGuild(guild, isSelected)} selected={isSelected} dense>
@@ -186,7 +202,7 @@ export const Home = () => {
 				</List>
 			</Drawer>
 			<GuildModal modalOpen={modalOpen} onClose={handleModalClose} guild={modalGuild} />
-			<Calendar localizer={localizer} startAccessor="start" endAccessor="end" style={{ height: "100vh", width: "100%", padding: 16 }} />
+			<Calendar localizer={localizer} events={calendarEvents} startAccessor="start" endAccessor="end" style={{ height: "100vh", width: "100%", padding: 16 }} />
 		</div>
 	);
 };
