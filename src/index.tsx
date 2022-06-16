@@ -3,12 +3,11 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { DiscordOAuthProvider } from "./DiscordOAuthProvider";
 import { Error404 } from "./GenericPages";
-import { Home } from "./Home";
+import { Home, clientId } from "./Home";
 
 import { OAuth2Scopes } from "discord-api-types/v10";
 import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
 
-const clientId = "986978606351786065";
 const scope = [OAuth2Scopes.Identify, OAuth2Scopes.Guilds];
 const redirectUri = "http://localhost:3000";
 

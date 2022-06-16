@@ -1,8 +1,13 @@
 import { useEffect, useReducer, useState } from "react";
 import { useDiscordOAuth } from "./DiscordOAuthProvider";
 
-import { Routes, RouteBases, RESTAPIPartialCurrentUserGuild as Guild } from "discord-api-types/v10";
-import { RESTGetAPIUserResult as User, RESTGetAPICurrentUserGuildsResult as Guilds } from "discord-api-types/v10";
+import {
+	Routes,
+	RouteBases,
+	RESTAPIPartialCurrentUserGuild as Guild,
+	RESTGetAPIUserResult as User,
+	RESTGetAPICurrentUserGuildsResult as Guilds,
+} from "discord-api-types/v10";
 
 import { APIBase, APIRoutes, imgUrl } from "./helpers";
 import { fetchWithTimeout } from "@inrixia/cfworker-helpers";
@@ -17,10 +22,11 @@ import { getDrawerHelpers } from "./Drawer";
 import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import CloseIcon from "@mui/icons-material/Close";
 
 // CSS
 import "./darkcalendar.scss";
+
+export const clientId = "986978606351786065";
 
 const localizer = momentLocalizer(moment);
 const { Drawer } = getDrawerHelpers(256);
@@ -55,8 +61,6 @@ const setSelectedGuilds = (selectedGuilds: SelectedGuilds): SelectedGuilds => {
 export const Home = () => {
 	const discordInfo = useDiscordOAuth();
 	const headers = { Authorization: `${discordInfo.tokenType} ${discordInfo.accessToken}` };
-
-	const theme = useTheme();
 
 	const [user, setUser] = useState<User>();
 	const [guilds, setGuilds] = useState<Guilds>();
@@ -186,6 +190,11 @@ const GuildIcon = ({ guild }: { guild: Guild }) => (
 	</Tooltip>
 );
 
+const redirectURL = new URL(`https://discord.com/oauth2/authorize`);
+redirectURL.searchParams.append("client_id", clientId);
+redirectURL.searchParams.append("scope", "bot");
+redirectURL.searchParams.append("permissions", "0");
+
 type AddGuildModalProps = { modalOpen: boolean; onClose: () => void; guild?: Guild };
 const GuildModal = ({ modalOpen, onClose, guild }: AddGuildModalProps) => {
 	const theme = useTheme();
@@ -223,7 +232,14 @@ const GuildModal = ({ modalOpen, onClose, guild }: AddGuildModalProps) => {
 				<br />
 				{guild && (
 					<>
-						<Button variant="contained" color="warning">
+						<Button
+							variant="contained"
+							color="warning"
+							onClick={() => {
+								redirectURL.searchParams.append("guild_id", guild.id);
+								window.open(redirectURL.href);
+							}}
+						>
 							<GuildIcon guild={guild} />
 							<Typography variant="body2">Add {guild.name}.</Typography>
 						</Button>
