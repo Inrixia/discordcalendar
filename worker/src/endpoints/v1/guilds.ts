@@ -1,7 +1,7 @@
 import { Router } from "itty-router";
 import { RESTGetAPICurrentUserGuildsResult, RouteBases, Routes } from "discord-api-types/v10";
 
-import { fetchWithTimeout } from "@inrixia/cfworker-helpers";
+import { fetchWithTimeout, jsonResponse } from "@inrixia/cfworker-helpers";
 
 import type { SRequest } from "../../types";
 
@@ -17,5 +17,5 @@ guilds.get("/", async (req: SRequest) => {
 			}, {} as Record<string, 0>)
 		);
 
-	return new Response(JSON.stringify(guilds));
+	return jsonResponse(guilds);
 });

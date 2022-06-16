@@ -7,6 +7,7 @@ import {
 	RESTAPIPartialCurrentUserGuild as Guild,
 	RESTGetAPIUserResult as User,
 	RESTGetAPICurrentUserGuildsResult as Guilds,
+	RESTGetAPIGuildScheduledEventsResult,
 } from "discord-api-types/v10";
 
 import { APIBase, APIRoutes, imgUrl } from "./helpers";
@@ -97,6 +98,19 @@ export const Home = () => {
 			.then(setBotGuilds)
 			.catch(console.error);
 	}, []);
+
+	type GuildEvents = Record<string, RESTGetAPIGuildScheduledEventsResult>;
+	const [events, setEvents] = useState<GuildEvents>();
+
+	useEffect(() => {
+		const eventsUrl = new URL(`${APIBase}/${APIRoutes.Events}`);
+		eventsUrl.searchParams.append("guildIds", Object.keys(selectedGuilds).join(","));
+		// Fetch guild events
+		fetch(eventsUrl)
+			.then((result) => result.json<BotGuilds>())
+			.then(setBotGuilds)
+			.catch(console.error);
+	}, [selectedGuilds]);
 
 	const onSelectGuild = (guild: Guild, isSelected: boolean) => {
 		if (botGuilds === undefined) return;

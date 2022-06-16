@@ -14,4 +14,5 @@ export const imgUrl = (base: CDNBase = "icons", id: string, hash: string, format
 export const APIBase = "https://api.discordcalendar.com";
 export const APIRoutes = {
 	Guilds: "/v1/guilds",
+	Events: "/v1/events",
 } as const;
