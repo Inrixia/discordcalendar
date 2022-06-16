@@ -4,13 +4,22 @@ import { useDiscordOAuth } from "./DiscordOAuthProvider";
 import { Routes, RouteBases } from "discord-api-types/v9";
 import { RESTGetAPIUserResult, RESTGetAPICurrentUserGuildsResult } from "discord-api-types/v10";
 
-import { fetchWithTimeout } from "./helpers";
+import { fetchWithTimeout, imgUrl } from "./helpers";
 
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
+import { Divider, List, ListItem, Grid, Avatar, Typography, ListItemButton, ListItemText } from "@mui/material";
+import { getDrawerHelpers } from "./Drawer";
+
+// Icons
+import IconButton from "@mui/material/IconButton";
+import MenuIcon from "@mui/icons-material/Menu";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 
 const localizer = momentLocalizer(moment);
+
+const { Drawer } = getDrawerHelpers(256);
 
 export const Home = () => {
 	const discordInfo = useDiscordOAuth();
@@ -18,24 +27,91 @@ export const Home = () => {
 
 	const [user, setUser] = useState<RESTGetAPIUserResult>();
 	const [guilds, setGuilds] = useState<RESTGetAPICurrentUserGuildsResult>();
+	const [drawerOpen, setDrawerOpen] = useState(true);
 
 	useEffect(() => {
 		// Fetch user
 		fetchWithTimeout(`${RouteBases.api}/${Routes.user()}`, { headers })
 			.then((result) => result.json<RESTGetAPIUserResult>())
-			.then(console.log)
+			.then(setUser)
 			.catch(console.error);
 
 		fetchWithTimeout(`${RouteBases.api}/${Routes.userGuilds()}`, { headers })
 			.then((result) => result.json<RESTGetAPICurrentUserGuildsResult>())
-			.then(console.log)
+			.then(setGuilds)
 			.catch(console.error);
 	}, []);
 
+	const handleDrawerOpen = () => setDrawerOpen(true);
+	const handleDrawerClose = () => setDrawerOpen(false);
+
 	return (
-		<>
-			Hello {user?.username || "Loading"}, you are in {guilds?.length || "Loading"} guilds.
-			<Calendar localizer={localizer} startAccessor="start" endAccessor="end" style={{ height: 500 }} />
-		</>
+		<div style={{ display: "flex" }}>
+			<Drawer variant="permanent" open={drawerOpen}>
+				{drawerOpen ? (
+					<div
+						style={{
+							display: "flex",
+							alignItems: "left",
+							flexWrap: "wrap",
+							whiteSpace: "nowrap",
+						}}
+					>
+						<div style={{ overflow: "hidden", maxHeight: 64 }}>
+							<IconButton onClick={handleDrawerClose}>
+								<ChevronLeftIcon />
+							</IconButton>
+							<span
+								style={{
+									textTransform: "uppercase",
+									fontWeight: "bold",
+									fontSize: 12,
+									letterSpacing: "1px",
+									textAlign: "center",
+									margin: "auto",
+									marginLeft: 16,
+								}}
+							>
+								Discord Calendar
+							</span>
+						</div>
+					</div>
+				) : (
+					<IconButton onClick={handleDrawerOpen}>
+						<MenuIcon />
+					</IconButton>
+				)}
+
+				<Divider />
+				<List>
+					<ListItem>
+						<Avatar src={user?.id ? imgUrl("avatars", user?.id, user?.avatar!) : ""} alt="" style={{ marginRight: 16 }} />
+						<ListItemText
+							primary={
+								<Typography variant="h6">
+									{user?.username}
+									<span style={{ color: "grey", fontWeight: "normal" }}>#{user?.discriminator}</span>
+								</Typography>
+							}
+						/>
+					</ListItem>
+				</List>
+				<Divider />
+				<List style={{ width: 256 }}>
+					{guilds?.map((guild) => {
+						return (
+							<ListItemButton key={guild.id} role={undefined} onClick={() => null} dense>
+								<Avatar src={guild.icon ? imgUrl("icons", guild.id, guild.icon) : ""} style={{ marginRight: 16 }}>
+									{guild.name[0].toUpperCase()}
+								</Avatar>
+								{drawerOpen ? <ListItemText id={guild.id} primary={guild.name} /> : null}
+							</ListItemButton>
+						);
+					})}
+					<Divider />
+				</List>
+			</Drawer>
+			<Calendar localizer={localizer} startAccessor="start" endAccessor="end" style={{ height: "100vh", width: "100%", padding: 16 }} />
+		</div>
 	);
 };
