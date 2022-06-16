@@ -106,8 +106,10 @@ export const Home = () => {
 	const [events, setEvents] = useState<GuildEvents>();
 
 	useEffect(() => {
+		const _selected = Object.keys(selectedGuilds);
+		if (_selected.length === 0) return;
 		const eventsUrl = new URL(`${APIBase}/${APIRoutes.Events}`);
-		eventsUrl.searchParams.append("guildIds", Object.keys(selectedGuilds).join(","));
+		eventsUrl.searchParams.append("guildIds", _selected.join(","));
 		// Fetch guild events
 		fetch(eventsUrl)
 			.then((result) => result.json<GuildEvents>())
