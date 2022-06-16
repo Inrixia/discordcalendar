@@ -9,7 +9,7 @@ import { fetchWithTimeout, imgUrl } from "./helpers";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
-import { Divider, List, ListItem, Avatar, Typography, ListItemButton, ListItemText } from "@mui/material";
+import { Divider, List, ListItem, Avatar, Typography, ListItemButton, ListItemText, Button, Tooltip } from "@mui/material";
 import { getDrawerHelpers } from "./Drawer";
 
 // Icons
@@ -30,7 +30,7 @@ export const Home = () => {
 
 	const [user, setUser] = useState<RESTGetAPIUserResult>();
 	const [guilds, setGuilds] = useState<RESTGetAPICurrentUserGuildsResult>();
-	const [drawerOpen, setDrawerOpen] = useState(true);
+	const [drawerOpen, setDrawerOpen] = useState(false);
 
 	useEffect(() => {
 		// Fetch user
@@ -103,10 +103,17 @@ export const Home = () => {
 					{guilds?.map((guild) => {
 						return (
 							<ListItemButton key={guild.id} role={undefined} onClick={() => null} dense>
-								<Avatar src={guild.icon ? imgUrl("icons", guild.id, guild.icon) : ""} style={{ marginRight: 16 }}>
-									{guild.name[0].toUpperCase()}
-								</Avatar>
-								{drawerOpen ? <ListItemText id={guild.id} primary={guild.name} /> : null}
+								<Tooltip
+									title={guild.name}
+									arrow
+									placement="right"
+									componentsProps={{ tooltip: { style: { background: "#18191C" } }, arrow: { style: { color: "#18191C" } } }}
+								>
+									<Avatar src={guild.icon ? imgUrl("icons", guild.id, guild.icon) : ""} style={{ marginRight: 16 }}>
+										{guild.name[0].toUpperCase()}
+									</Avatar>
+								</Tooltip>
+								<ListItemText id={guild.id} primary={guild.name} />
 							</ListItemButton>
 						);
 					})}
