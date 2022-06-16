@@ -8,7 +8,7 @@ import { Home } from "./Home";
 import { OAuth2Scopes } from "discord-api-types/v10";
 import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
 
-const clientId = "982998156558078022";
+const clientId = "986978606351786065";
 const scope = [OAuth2Scopes.Identify];
 const redirectUri = "http://localhost:3000";
 

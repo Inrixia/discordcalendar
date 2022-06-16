@@ -1,7 +1,7 @@
 import { useEffect, useReducer, useState } from "react";
 import { useDiscordOAuth } from "./DiscordOAuthProvider";
 
-import { Routes, RouteBases } from "discord-api-types/v9";
+import { Routes, RouteBases } from "discord-api-types/v10";
 import { RESTGetAPIUserResult, RESTGetAPICurrentUserGuildsResult } from "discord-api-types/v10";
 
 import { fetchWithTimeout, imgUrl } from "./helpers";

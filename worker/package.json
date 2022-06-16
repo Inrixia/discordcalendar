@@ -1,0 +1,29 @@
+{
+	"name": "@discordcalendar/worker",
+	"version": "1.0.0",
+	"main": "src/index.ts",
+	"type": "module",
+	"scripts": {
+		"build": "worktop build src/index.ts --minify"
+	},
+	"author": "@Inrixia",
+	"license": "MIT OR Apache-2.0",
+	"eslintConfig": {
+		"root": true,
+		"extends": [
+			"typescript",
+			"prettier"
+		]
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "^3.11.0",
+		"@types/node": "^17.0.38",
+		"tslib": "^2.4.0",
+		"worktop.build": "0.0.4"
+	},
+	"dependencies": {
+		"@inrixia/cfworker-helpers": "github:Inrixia/cfworker-helpers",
+		"discord-api-types": "^0.34.0",
+		"itty-router": "^2.6.1"
+	}
+}
