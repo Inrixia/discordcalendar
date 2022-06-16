@@ -1,12 +1,15 @@
 import { createContext, ReactNode, useContext, useEffect, useMemo, useRef, useState } from "react";
 
-export type DiscordOAuthProviderProps = { clientId: string; scope: string[]; redirect_uri: string; children: ReactNode };
+import { OAuth2Routes, OAuth2Scopes } from "discord-api-types/v10";
+
+export type DiscordOAuthProviderProps = { clientId: string; scope: OAuth2Scopes[]; redirect_uri: string; children: ReactNode };
 
 enum AuthStage {
 	Unauthenticated = "-1",
 	Loading = "0",
 	Authenticated = "1",
 }
+
 const getAuthStage = (): AuthStage => {
 	const authStageString = sessionStorage.getItem("authStage");
 	if (authStageString !== AuthStage.Authenticated && authStageString !== AuthStage.Loading && authStageString !== AuthStage.Unauthenticated) {
@@ -30,16 +33,19 @@ const DiscordOAuthContext = createContext<AuthContext>(nullAuthContext);
 
 const removeHash = () => window.history.pushState("", document.title, window.location.pathname + window.location.search);
 
+type AuthError = { error: string | null; description: string | null };
+
 export const DiscordOAuthProvider = (props: DiscordOAuthProviderProps) => {
 	const hasToken = useRef(false);
 	const [tokenContext, setTokenContext] = useState<AuthContext>(nullAuthContext);
+	const [authError, setAuthError] = useState<AuthError | null>(null);
 
 	useEffect(() => {
 		if (hasToken.current) return;
 		hasToken.current = true;
 		switch (getAuthStage()) {
 			case AuthStage.Unauthenticated: {
-				const redirectUrl = new URL("https://discord.com/api/oauth2/authorize");
+				const redirectUrl = new URL(OAuth2Routes.authorizationURL);
 				redirectUrl.searchParams.append("state", setDiscordState());
 				redirectUrl.searchParams.append("response_type", "token");
 				redirectUrl.searchParams.append("client_id", props.clientId);
@@ -54,6 +60,13 @@ export const DiscordOAuthProvider = (props: DiscordOAuthProviderProps) => {
 				const hash = new URLSearchParams(window.location.hash.substring(1));
 				const discordState = getDiscordState();
 				if (discordState !== null && discordState !== hash.get("state")) break;
+				if (hash.get("error") !== null) {
+					setAuthError({
+						error: hash.get("error"),
+						description: hash.get("error_description"),
+					});
+					break;
+				}
 				clearDiscordState();
 				setAuthStage(AuthStage.Authenticated);
 				setTokenContext({
@@ -75,7 +88,20 @@ export const DiscordOAuthProvider = (props: DiscordOAuthProviderProps) => {
 
 	const memoContext = useMemo(() => tokenContext, [tokenContext]);
 
-	if (!hasToken.current) return null;
+	if (authError !== null)
+		return (
+			<>
+				An error occoured while attempting to authenticate: {authError.error}
+				<br />
+				{authError.description}
+			</>
+		);
+	if (!hasToken.current) {
+		setTimeout(() => {
+			if (!hasToken.current) setAuthStage(AuthStage.Unauthenticated);
+		}, 1000);
+		return null;
+	}
 	return <DiscordOAuthContext.Provider value={memoContext}>{props.children}</DiscordOAuthContext.Provider>;
 };
 
