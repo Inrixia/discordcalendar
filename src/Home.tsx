@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import { useDiscordOAuth } from "./DiscordOAuthProvider";
 
 import { Routes, RouteBases } from "discord-api-types/v9";
@@ -9,7 +9,7 @@ import { fetchWithTimeout, imgUrl } from "./helpers";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
-import { Divider, List, ListItem, Avatar, Typography, ListItemButton, ListItemText, Button, Tooltip } from "@mui/material";
+import { Divider, List, ListItem, Avatar, Typography, ListItemButton, ListItemText, Tooltip } from "@mui/material";
 import { getDrawerHelpers } from "./Drawer";
 
 // Icons
@@ -21,8 +21,18 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import "./darkcalendar.scss";
 
 const localizer = momentLocalizer(moment);
-
 const { Drawer } = getDrawerHelpers(256);
+
+const guildReducer = (state: Record<string, boolean>, action: { type: "add" | "remove"; id: string }) => {
+	switch (action.type) {
+		case "add":
+			return { ...state, [action.id]: true };
+		case "remove":
+			return { ...state, [action.id]: false };
+		default:
+			throw new Error("No action specified for guildReducer!");
+	}
+};
 
 export const Home = () => {
 	const discordInfo = useDiscordOAuth();
@@ -31,6 +41,8 @@ export const Home = () => {
 	const [user, setUser] = useState<RESTGetAPIUserResult>();
 	const [guilds, setGuilds] = useState<RESTGetAPICurrentUserGuildsResult>();
 	const [drawerOpen, setDrawerOpen] = useState(false);
+
+	const [selectedGuilds, dispatchSelected] = useReducer(guildReducer, {} as Record<string, boolean>);
 
 	useEffect(() => {
 		// Fetch user
@@ -101,8 +113,9 @@ export const Home = () => {
 				<Divider />
 				<List style={{ width: 256 }}>
 					{guilds?.map((guild) => {
+						const isSelected = selectedGuilds[guild.id] === true;
 						return (
-							<ListItemButton key={guild.id} role={undefined} onClick={() => null} dense>
+							<ListItemButton key={guild.id} onClick={() => dispatchSelected({ type: isSelected ? "remove" : "add", id: guild.id })} selected={isSelected} dense>
 								<Tooltip
 									title={guild.name}
 									arrow
