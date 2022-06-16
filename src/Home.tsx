@@ -23,15 +23,31 @@ import "./darkcalendar.scss";
 const localizer = momentLocalizer(moment);
 const { Drawer } = getDrawerHelpers(256);
 
+type SelectedGuilds = Record<string, boolean>;
 const guildReducer = (state: Record<string, boolean>, action: { type: "add" | "remove"; id: string }) => {
 	switch (action.type) {
 		case "add":
-			return { ...state, [action.id]: true };
+			return setSelectedGuilds({ ...state, [action.id]: true });
 		case "remove":
-			return { ...state, [action.id]: false };
+			return setSelectedGuilds({ ...state, [action.id]: false });
 		default:
 			throw new Error("No action specified for guildReducer!");
 	}
+};
+
+const getSelectedDefaults = () => {
+	let selectedDefaults: SelectedGuilds = {};
+	let sDString = localStorage.getItem("selectedGuilds");
+	if (sDString !== null) {
+		try {
+			selectedDefaults = JSON.parse(sDString);
+		} catch {}
+	}
+	return selectedDefaults;
+};
+const setSelectedGuilds = (selectedGuilds: SelectedGuilds): SelectedGuilds => {
+	localStorage.setItem("selectedGuilds", JSON.stringify(selectedGuilds));
+	return selectedGuilds;
 };
 
 export const Home = () => {
@@ -42,7 +58,7 @@ export const Home = () => {
 	const [guilds, setGuilds] = useState<RESTGetAPICurrentUserGuildsResult>();
 	const [drawerOpen, setDrawerOpen] = useState(false);
 
-	const [selectedGuilds, dispatchSelected] = useReducer(guildReducer, {} as Record<string, boolean>);
+	const [selectedGuilds, dispatchSelected] = useReducer(guildReducer, getSelectedDefaults());
 
 	useEffect(() => {
 		// Fetch user
