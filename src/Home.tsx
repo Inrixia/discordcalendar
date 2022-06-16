@@ -1,10 +1,11 @@
 import { useEffect, useReducer, useState } from "react";
 import { useDiscordOAuth } from "./DiscordOAuthProvider";
 
-import { Routes, RouteBases } from "discord-api-types/v10";
+import { Routes, RouteBases, RESTAPIPartialCurrentUserGuild } from "discord-api-types/v10";
 import { RESTGetAPIUserResult, RESTGetAPICurrentUserGuildsResult } from "discord-api-types/v10";
 
-import { fetchWithTimeout, imgUrl } from "./helpers";
+import { APIBase, APIRoutes, imgUrl } from "./helpers";
+import { fetchWithTimeout } from "@inrixia/cfworker-helpers";
 
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Calendar, momentLocalizer } from "react-big-calendar";
@@ -59,6 +60,8 @@ export const Home = () => {
 	const [drawerOpen, setDrawerOpen] = useState(false);
 
 	const [selectedGuilds, dispatchSelected] = useReducer(guildReducer, getSelectedDefaults());
+	type BotGuilds = Record<string, 0>;
+	const [botGuilds, setBotGuilds] = useState<BotGuilds>();
 
 	useEffect(() => {
 		// Fetch user
@@ -67,14 +70,27 @@ export const Home = () => {
 			.then(setUser)
 			.catch(console.error);
 
+		// Fetch user guilds
 		fetchWithTimeout(`${RouteBases.api}/${Routes.userGuilds()}`, { headers })
 			.then((result) => result.json<RESTGetAPICurrentUserGuildsResult>())
 			.then(setGuilds)
+			.catch(console.error);
+
+		// Fetch bot guilds
+		fetch(`${APIBase}/${APIRoutes.Guilds}`)
+			.then((result) => result.json<BotGuilds>())
+			.then(setBotGuilds)
 			.catch(console.error);
 	}, []);
 
 	const handleDrawerOpen = () => setDrawerOpen(true);
 	const handleDrawerClose = () => setDrawerOpen(false);
+
+	const onSelectGuild = (id: string, isSelected: boolean) => {
+		if (botGuilds === undefined) return;
+		if (botGuilds[id] === undefined) console.log("Woa this guild is not in the bot's list!");
+		else dispatchSelected({ type: isSelected ? "remove" : "add", id });
+	};
 
 	return (
 		<div style={{ display: "flex" }}>
@@ -128,24 +144,25 @@ export const Home = () => {
 				</List>
 				<Divider />
 				<List style={{ width: 256 }}>
-					{guilds?.map((guild) => {
-						const isSelected = selectedGuilds[guild.id] === true;
-						return (
-							<ListItemButton key={guild.id} onClick={() => dispatchSelected({ type: isSelected ? "remove" : "add", id: guild.id })} selected={isSelected} dense>
-								<Tooltip
-									title={guild.name}
-									arrow
-									placement="right"
-									componentsProps={{ tooltip: { style: { background: "#18191C" } }, arrow: { style: { color: "#18191C" } } }}
-								>
-									<Avatar src={guild.icon ? imgUrl("icons", guild.id, guild.icon) : ""} style={{ marginRight: 16 }}>
-										{guild.name[0].toUpperCase()}
-									</Avatar>
-								</Tooltip>
-								<ListItemText id={guild.id} primary={guild.name} />
-							</ListItemButton>
-						);
-					})}
+					{guilds &&
+						guilds?.map((guild) => {
+							const isSelected = selectedGuilds[guild.id] === true;
+							return (
+								<ListItemButton key={guild.id} onClick={() => onSelectGuild(guild.id, isSelected)} selected={isSelected} dense>
+									<Tooltip
+										title={guild.name}
+										arrow
+										placement="right"
+										componentsProps={{ tooltip: { style: { background: "#18191C" } }, arrow: { style: { color: "#18191C" } } }}
+									>
+										<Avatar src={guild.icon ? imgUrl("icons", guild.id, guild.icon) : ""} style={{ marginRight: 16 }}>
+											{guild.name[0].toUpperCase()}
+										</Avatar>
+									</Tooltip>
+									<ListItemText id={guild.id} primary={guild.name} />
+								</ListItemButton>
+							);
+						})}
 					<Divider />
 				</List>
 			</Drawer>
