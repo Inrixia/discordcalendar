@@ -9,13 +9,16 @@ import { fetchWithTimeout, imgUrl } from "./helpers";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
-import { Divider, List, ListItem, Grid, Avatar, Typography, ListItemButton, ListItemText } from "@mui/material";
+import { Divider, List, ListItem, Avatar, Typography, ListItemButton, ListItemText } from "@mui/material";
 import { getDrawerHelpers } from "./Drawer";
 
 // Icons
 import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+
+// CSS
+import "./darkcalendar.scss";
 
 const localizer = momentLocalizer(moment);
 
@@ -47,7 +50,7 @@ export const Home = () => {
 
 	return (
 		<div style={{ display: "flex" }}>
-			<Drawer variant="permanent" open={drawerOpen}>
+			<Drawer variant="permanent" open={drawerOpen} PaperProps={{ style: { background: "#202225" } }}>
 				{drawerOpen ? (
 					<div
 						style={{
@@ -81,7 +84,6 @@ export const Home = () => {
 						<MenuIcon />
 					</IconButton>
 				)}
-
 				<Divider />
 				<List>
 					<ListItem>

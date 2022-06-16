@@ -15,6 +15,9 @@ const redirectUri = "http://localhost:3000";
 const theme = createTheme({
 	palette: {
 		mode: "dark",
+		text: {
+			primary: "#dcd8d9",
+		},
 	},
 	components: {
 		MuiCssBaseline: {

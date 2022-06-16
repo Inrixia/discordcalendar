@@ -1,0 +1,19 @@
+$out-of-range-bg-color: #292b2f;
+$today-highlight-bg: #40444b;
+
+$calendar-border: #36393f;
+$cell-border: #36393f;
+
+$border-color: black;
+
+$time-selection-color: #dcd8d9;
+
+$btn-color: #dcd8d9;
+$btn-bg: #3f434a;
+$btn-border: #40444b;
+
+@import "react-big-calendar/lib/sass/styles";
+
+.rbc-calendar {
+	background: #2f3136;
+}
