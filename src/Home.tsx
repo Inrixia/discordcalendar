@@ -1,8 +1,8 @@
 import { useEffect, useReducer, useState } from "react";
 import { useDiscordOAuth } from "./DiscordOAuthProvider";
 
-import { Routes, RouteBases, RESTAPIPartialCurrentUserGuild } from "discord-api-types/v10";
-import { RESTGetAPIUserResult, RESTGetAPICurrentUserGuildsResult } from "discord-api-types/v10";
+import { Routes, RouteBases, RESTAPIPartialCurrentUserGuild as Guild } from "discord-api-types/v10";
+import { RESTGetAPIUserResult as User, RESTGetAPICurrentUserGuildsResult as Guilds } from "discord-api-types/v10";
 
 import { APIBase, APIRoutes, imgUrl } from "./helpers";
 import { fetchWithTimeout } from "@inrixia/cfworker-helpers";
@@ -10,13 +10,14 @@ import { fetchWithTimeout } from "@inrixia/cfworker-helpers";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
-import { Divider, List, ListItem, Avatar, Typography, ListItemButton, ListItemText, Tooltip } from "@mui/material";
+import { Divider, List, ListItem, Avatar, Typography, ListItemButton, ListItemText, Tooltip, Modal, Box, useTheme, Button } from "@mui/material";
 import { getDrawerHelpers } from "./Drawer";
 
 // Icons
 import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import CloseIcon from "@mui/icons-material/Close";
 
 // CSS
 import "./darkcalendar.scss";
@@ -55,24 +56,34 @@ export const Home = () => {
 	const discordInfo = useDiscordOAuth();
 	const headers = { Authorization: `${discordInfo.tokenType} ${discordInfo.accessToken}` };
 
-	const [user, setUser] = useState<RESTGetAPIUserResult>();
-	const [guilds, setGuilds] = useState<RESTGetAPICurrentUserGuildsResult>();
-	const [drawerOpen, setDrawerOpen] = useState(false);
+	const theme = useTheme();
+
+	const [user, setUser] = useState<User>();
+	const [guilds, setGuilds] = useState<Guilds>();
 
 	const [selectedGuilds, dispatchSelected] = useReducer(guildReducer, getSelectedDefaults());
 	type BotGuilds = Record<string, 0>;
 	const [botGuilds, setBotGuilds] = useState<BotGuilds>();
 
+	// Viewstates
+	const [drawerOpen, setDrawerOpen] = useState(false);
+	const handleDrawerOpen = () => setDrawerOpen(true);
+	const handleDrawerClose = () => setDrawerOpen(false);
+
+	const [modalOpen, setModalOpen] = useState(false);
+	const [modalGuild, setModalGuild] = useState<Guild>();
+	const handleModalClose = () => setModalOpen(false);
+
 	useEffect(() => {
 		// Fetch user
 		fetchWithTimeout(`${RouteBases.api}/${Routes.user()}`, { headers })
-			.then((result) => result.json<RESTGetAPIUserResult>())
+			.then((result) => result.json<User>())
 			.then(setUser)
 			.catch(console.error);
 
 		// Fetch user guilds
 		fetchWithTimeout(`${RouteBases.api}/${Routes.userGuilds()}`, { headers })
-			.then((result) => result.json<RESTGetAPICurrentUserGuildsResult>())
+			.then((result) => result.json<Guilds>())
 			.then(setGuilds)
 			.catch(console.error);
 
@@ -83,13 +94,12 @@ export const Home = () => {
 			.catch(console.error);
 	}, []);
 
-	const handleDrawerOpen = () => setDrawerOpen(true);
-	const handleDrawerClose = () => setDrawerOpen(false);
-
-	const onSelectGuild = (id: string, isSelected: boolean) => {
+	const onSelectGuild = (guild: Guild, isSelected: boolean) => {
 		if (botGuilds === undefined) return;
-		if (botGuilds[id] === undefined) console.log("Woa this guild is not in the bot's list!");
-		else dispatchSelected({ type: isSelected ? "remove" : "add", id });
+		if (botGuilds[guild.id] === undefined) {
+			setModalGuild(guild);
+			setModalOpen(true);
+		} else dispatchSelected({ type: isSelected ? "remove" : "add", id: guild.id });
 	};
 
 	return (
@@ -148,17 +158,8 @@ export const Home = () => {
 						guilds?.map((guild) => {
 							const isSelected = selectedGuilds[guild.id] === true;
 							return (
-								<ListItemButton key={guild.id} onClick={() => onSelectGuild(guild.id, isSelected)} selected={isSelected} dense>
-									<Tooltip
-										title={guild.name}
-										arrow
-										placement="right"
-										componentsProps={{ tooltip: { style: { background: "#18191C" } }, arrow: { style: { color: "#18191C" } } }}
-									>
-										<Avatar src={guild.icon ? imgUrl("icons", guild.id, guild.icon) : ""} style={{ marginRight: 16 }}>
-											{guild.name[0].toUpperCase()}
-										</Avatar>
-									</Tooltip>
+								<ListItemButton key={guild.id} onClick={() => onSelectGuild(guild, isSelected)} selected={isSelected} dense>
+									<GuildIcon guild={guild} />
 									<ListItemText id={guild.id} primary={guild.name} />
 								</ListItemButton>
 							);
@@ -166,7 +167,75 @@ export const Home = () => {
 					<Divider />
 				</List>
 			</Drawer>
+			<GuildModal modalOpen={modalOpen} onClose={handleModalClose} guild={modalGuild} />
 			<Calendar localizer={localizer} startAccessor="start" endAccessor="end" style={{ height: "100vh", width: "100%", padding: 16 }} />
 		</div>
+	);
+};
+
+const GuildIcon = ({ guild }: { guild: Guild }) => (
+	<Tooltip
+		title={guild.name}
+		arrow
+		placement="right"
+		componentsProps={{ tooltip: { style: { background: "#18191C" } }, arrow: { style: { color: "#18191C" } } }}
+	>
+		<Avatar src={guild.icon ? imgUrl("icons", guild.id, guild.icon) : ""} style={{ marginRight: 16 }}>
+			{guild.name[0].toUpperCase()}
+		</Avatar>
+	</Tooltip>
+);
+
+type AddGuildModalProps = { modalOpen: boolean; onClose: () => void; guild?: Guild };
+const GuildModal = ({ modalOpen, onClose, guild }: AddGuildModalProps) => {
+	const theme = useTheme();
+
+	return (
+		<Modal
+			style={{
+				display: "flex",
+				alignItems: "center",
+				justifyContent: "center",
+			}}
+			open={modalOpen}
+			onClose={onClose}
+		>
+			<Box
+				style={{
+					textAlign: "center",
+					backgroundColor: "#292B2F",
+					boxShadow: theme.shadows[5],
+					padding: theme.spacing(2, 4, 3),
+					width: "350px",
+					height: "256px",
+				}}
+			>
+				<Typography variant="h5">404 Guild not found!</Typography>
+				<Typography variant="body1">
+					Please add the Calendar bot to your discord so events can be seen.{" "}
+					<Tooltip
+						title="Unfortunately due to how discord's api works, in order to view events on a server a bot must be added with permissions to do so. I can't see events directly
+			on your account."
+					>
+						<b>Why?</b>
+					</Tooltip>
+				</Typography>
+				<br />
+				{guild && (
+					<>
+						<Button variant="contained" color="warning">
+							<GuildIcon guild={guild} />
+							<Typography variant="body2">Add {guild.name}.</Typography>
+						</Button>
+						<br />
+						or
+						<br />
+					</>
+				)}
+				<Button variant="contained" color="error" onClick={onClose}>
+					<Typography variant="body2">Go Back</Typography>
+				</Button>
+			</Box>
+		</Modal>
 	);
 };
