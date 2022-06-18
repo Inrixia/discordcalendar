@@ -98,6 +98,8 @@ const buildCalendarEvents = (guilds: UserGuilds) =>
 				),
 				start: event.scheduled_start_time ? new Date(event.scheduled_start_time) : undefined,
 				end: event.scheduled_end_time ? new Date(event.scheduled_end_time) : new Date(new Date(event.scheduled_start_time).getTime() + 1000 * 60 * 30),
+				// @ts-expect-error Yea the types seem wrong for this, its resourceId
+				resourceId: guild.id,
 			})
 		)
 	);
@@ -231,7 +233,11 @@ export const Home = () => {
 				events={buildCalendarEvents(guilds)}
 				startAccessor="start"
 				endAccessor="end"
+				resources={Object.values(guilds).filter((guild) => guild.events.length > 0)}
+				resourceIdAccessor="id"
+				resourceTitleAccessor="name"
 				popup
+				step={60}
 				style={{ height: "100vh", width: "100%", padding: 16 }}
 			/>
 		</div>

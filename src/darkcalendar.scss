@@ -12,8 +12,16 @@ $btn-color: #dcd8d9;
 $btn-bg: #3f434a;
 $btn-border: #40444b;
 
+$background: #2f3136;
+
 @import "react-big-calendar/lib/sass/styles";
 
 .rbc-calendar {
-	background: #2f3136;
+	background: $background;
+}
+.rbc-timeslot-group {
+	background: $background;
+}
+.rbc-time-header-gutter {
+	background: $background;
 }
