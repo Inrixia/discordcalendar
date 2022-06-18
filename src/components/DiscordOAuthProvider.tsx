@@ -27,7 +27,7 @@ const setDiscordState = (): string => {
 	return randString;
 };
 
-type AuthContext = { tokenType: null | string; accessToken: null | string; scope: null | string };
+type AuthContext = { tokenType: string | null; accessToken: string | null; scope: string | null; headers?: { Authorization: string } };
 const nullAuthContext = { tokenType: null, accessToken: null, scope: null };
 const DiscordOAuthContext = createContext<AuthContext>(nullAuthContext);
 
@@ -69,10 +69,13 @@ export const DiscordOAuthProvider = (props: DiscordOAuthProviderProps) => {
 				}
 				clearDiscordState();
 				setAuthStage(AuthStage.Authenticated);
+				const tokenType = hash.get("token_type");
+				const accessToken = hash.get("access_token");
 				setTokenContext({
-					tokenType: hash.get("token_type"),
-					accessToken: hash.get("access_token"),
+					tokenType,
+					accessToken,
 					scope: hash.get("scope"),
+					headers: { Authorization: `${tokenType} ${accessToken}` },
 				});
 				removeHash();
 				break;

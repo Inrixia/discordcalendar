@@ -1,8 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { DiscordOAuthProvider } from "./DiscordOAuthProvider";
-import { Error404 } from "./GenericPages";
+import { DiscordOAuthProvider } from "./components/DiscordOAuthProvider";
+import { Error404 } from "./components/GenericPages";
 import { Home, clientId } from "./Home";
 
 import { OAuth2Scopes } from "discord-api-types/v10";

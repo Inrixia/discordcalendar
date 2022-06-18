@@ -1,24 +1,22 @@
 import { useEffect, useReducer, useState } from "react";
-import { useDiscordOAuth } from "./DiscordOAuthProvider";
+import { useDiscordOAuth } from "./components/DiscordOAuthProvider";
 
 import {
 	Routes,
 	RouteBases,
 	RESTAPIPartialCurrentUserGuild as Guild,
-	RESTGetAPIUserResult as User,
 	RESTGetAPICurrentUserGuildsResult as Guilds,
-	RESTGetAPIGuildScheduledEventsResult,
 	APIGuildScheduledEvent,
 } from "discord-api-types/v10";
 
-import { APIBase, APIRoutes, ImageSize, imgUrl } from "./helpers";
+import { APIBase, APIRoutes } from "./helpers";
 import { fetchWithTimeout } from "@inrixia/cfworker-helpers";
 
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Calendar, momentLocalizer, Event as CalendarEvent } from "react-big-calendar";
 import moment from "moment";
-import { Divider, List, ListItem, Avatar, Typography, ListItemButton, ListItemText, Tooltip, Modal, Box, useTheme, Button } from "@mui/material";
-import { getDrawerHelpers } from "./Drawer";
+import { Divider, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
+import { getDrawerHelpers } from "./components/Drawer";
 
 // Icons
 import IconButton from "@mui/material/IconButton";
@@ -27,6 +25,9 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 
 // CSS
 import "./darkcalendar.scss";
+import { UserProfile } from "./components/UserProfile";
+import { GuildIcon } from "./components/GuildIcon";
+import { GuildModal } from "./components/GuildModal";
 
 export const clientId = "986978606351786065";
 
@@ -62,10 +63,8 @@ const setSelectedGuilds = (selectedGuilds: SelectedGuilds): SelectedGuilds => {
 };
 
 export const Home = () => {
-	const discordInfo = useDiscordOAuth();
-	const headers = { Authorization: `${discordInfo.tokenType} ${discordInfo.accessToken}` };
+	const { headers } = useDiscordOAuth();
 
-	const [user, setUser] = useState<User>();
 	const [guilds, setGuilds] = useState<Record<string, Guild>>();
 
 	const [selectedGuilds, dispatchSelected] = useReducer(guildReducer, getSelectedDefaults());
@@ -82,12 +81,6 @@ export const Home = () => {
 	const handleModalClose = () => setModalOpen(false);
 
 	useEffect(() => {
-		// Fetch user
-		fetchWithTimeout(`${RouteBases.api}/${Routes.user()}`, { headers })
-			.then((result) => result.json<User>())
-			.then(setUser)
-			.catch(console.error);
-
 		// Fetch user guilds
 		fetchWithTimeout(`${RouteBases.api}/${Routes.userGuilds()}`, { headers })
 			.then((result) => result.json<Guilds>())
@@ -177,15 +170,7 @@ export const Home = () => {
 				<Divider />
 				<List>
 					<ListItem>
-						<Avatar src={user?.id ? imgUrl("avatars", user?.id, user?.avatar!) : ""} alt="" style={{ marginRight: 16 }} />
-						<ListItemText
-							primary={
-								<Typography variant="h6">
-									{user?.username}
-									<span style={{ color: "grey", fontWeight: "normal" }}>#{user?.discriminator}</span>
-								</Typography>
-							}
-						/>
+						<UserProfile />
 					</ListItem>
 				</List>
 				<Divider />
@@ -213,84 +198,5 @@ export const Home = () => {
 				style={{ height: "100vh", width: "100%", padding: 16 }}
 			/>
 		</div>
-	);
-};
-
-const GuildIcon = ({ guild, size }: { guild: Guild; size?: number }) => (
-	<Tooltip
-		title={guild.name}
-		arrow
-		placement="right"
-		componentsProps={{ tooltip: { style: { background: "#18191C" } }, arrow: { style: { color: "#18191C" } } }}
-	>
-		<Avatar src={guild.icon ? imgUrl("icons", guild.id, guild.icon) : ""} style={{ marginRight: 16, width: size, height: size }}>
-			{guild.name[0].toUpperCase()}
-		</Avatar>
-	</Tooltip>
-);
-
-const redirectURL = new URL(`https://discord.com/oauth2/authorize`);
-redirectURL.searchParams.append("client_id", clientId);
-redirectURL.searchParams.append("scope", "bot");
-redirectURL.searchParams.append("permissions", "0");
-
-type AddGuildModalProps = { modalOpen: boolean; onClose: () => void; guild?: Guild };
-const GuildModal = ({ modalOpen, onClose, guild }: AddGuildModalProps) => {
-	const theme = useTheme();
-
-	return (
-		<Modal
-			style={{
-				display: "flex",
-				alignItems: "center",
-				justifyContent: "center",
-			}}
-			open={modalOpen}
-			onClose={onClose}
-		>
-			<Box
-				style={{
-					textAlign: "center",
-					backgroundColor: "#292B2F",
-					boxShadow: theme.shadows[5],
-					padding: theme.spacing(2, 4, 3),
-					width: "350px",
-					height: "256px",
-				}}
-			>
-				<Typography variant="h5">404 Guild not found!</Typography>
-				<Typography variant="body1">
-					Please add the Calendar bot to your discord so events can be seen.{" "}
-					<Tooltip
-						title="Unfortunately due to how discord's api works, in order to view events on a server a bot must be added with permissions to do so. I can't see events directly
-			on your account."
-					>
-						<b>Why?</b>
-					</Tooltip>
-				</Typography>
-				<br />
-				{guild && (
-					<>
-						<Button
-							variant="contained"
-							color="warning"
-							onClick={() => {
-								redirectURL.searchParams.append("guild_id", guild.id);
-								window.open(redirectURL.href);
-							}}
-						>
-							<GuildIcon guild={guild} />
-							<Typography variant="body2">Add {guild.name}.</Typography>
-						</Button>
-						<br />
-						or
-						<br />
-					</>
-				)}
-				<Button variant="contained" color="error" onClick={onClose}>
-					<Typography variant="body2">Go Back</Typography>
-				</Button>
-			</Box>
-		</Modal>
 	);
 };
