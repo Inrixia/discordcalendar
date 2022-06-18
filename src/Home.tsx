@@ -15,7 +15,7 @@ import { fetchWithTimeout } from "@inrixia/cfworker-helpers";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Calendar, momentLocalizer, Event as CalendarEvent } from "react-big-calendar";
 import moment from "moment";
-import { Divider, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
+import { Divider, Grid, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
 import { getDrawerHelpers } from "./components/Drawer";
 
 // Icons
@@ -91,13 +91,13 @@ const buildCalendarEvents = (guilds: UserGuilds) =>
 		(guild.events || []).map(
 			(event): CalendarEvent => ({
 				title: (
-					<>
-						{<GuildIcon guild={guild} size={24} />}
+					<div style={{ display: "flex" }}>
+						<GuildIcon guild={guild} size={24} style={{ marginRight: 4 }} />
 						{event.name}
-					</>
+					</div>
 				),
 				start: event.scheduled_start_time ? new Date(event.scheduled_start_time) : undefined,
-				end: event.scheduled_end_time ? new Date(event.scheduled_end_time) : new Date(new Date(event.scheduled_start_time).getTime() + 1000 * 60 * 60),
+				end: event.scheduled_end_time ? new Date(event.scheduled_end_time) : new Date(new Date(event.scheduled_start_time).getTime() + 1000 * 60 * 30),
 			})
 		)
 	);
@@ -210,7 +210,7 @@ export const Home = () => {
 				<List style={{ width: 256 }}>
 					{Object.values(guilds).map((guild) => (
 						<ListItemButton key={guild.id} onClick={() => onSelect(guild)} selected={guild.selected} dense>
-							<GuildIcon guild={guild} />
+							<GuildIcon guild={guild} style={{ marginRight: 16 }} />
 							<ListItemText id={guild.id} primary={guild.name} />
 						</ListItemButton>
 					))}
@@ -231,6 +231,7 @@ export const Home = () => {
 				events={buildCalendarEvents(guilds)}
 				startAccessor="start"
 				endAccessor="end"
+				popup
 				style={{ height: "100vh", width: "100%", padding: 16 }}
 			/>
 		</div>
