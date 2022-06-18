@@ -15,7 +15,7 @@ import { fetchWithTimeout } from "@inrixia/cfworker-helpers";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Calendar, momentLocalizer, Event as CalendarEvent } from "react-big-calendar";
 import moment from "moment";
-import { Divider, Grid, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
+import { Divider, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
 import { getDrawerHelpers } from "./components/Drawer";
 
 // Icons
@@ -116,7 +116,9 @@ export const Home = () => {
 	const [modalGuild, setModalGuild] = useState<Guild>();
 
 	const updateSelectedGuildEvents = () => {
-		fetch(makeEventsUrl(Object.keys(guilds).filter((id) => guilds[id].selected)))
+		const selectedGuildIds = Object.keys(guilds).filter((id) => guilds[id].selected);
+		if (selectedGuildIds.length < 1) return;
+		fetch(makeEventsUrl(selectedGuildIds))
 			.then((result) => result.json<GuildEvents>())
 			.then((events) => dispatchGuilds({ do: "updateEvents", events }));
 	};
