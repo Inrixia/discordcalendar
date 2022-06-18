@@ -14,7 +14,7 @@ export class WorkerCache<CacheValue> {
 	}
 
 	public async get(reGenerate?: boolean) {
-		if (reGenerate === true || this.ttl < Date.now()) {
+		if (reGenerate === true || this.deathDate < Date.now()) {
 			this.value = await this.generator();
 			this.deathDate = Date.now() + this.ttl;
 		}
