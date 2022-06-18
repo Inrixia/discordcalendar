@@ -18,7 +18,7 @@ export const UserProfile = () => {
 			.then((result) => result.json<User>())
 			.then(setUser)
 			.catch(console.error);
-	}, []);
+	}, [headers]);
 
 	return (
 		<>

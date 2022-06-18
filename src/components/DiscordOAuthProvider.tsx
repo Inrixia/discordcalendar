@@ -87,7 +87,7 @@ export const DiscordOAuthProvider = (props: DiscordOAuthProviderProps) => {
 				}
 			}
 		}
-	}, [props]);
+	}, [props, tokenContext.accessToken]);
 
 	const memoContext = useMemo(() => tokenContext, [tokenContext]);
 

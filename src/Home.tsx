@@ -6,7 +6,7 @@ import {
 	RouteBases,
 	RESTAPIPartialCurrentUserGuild as Guild,
 	RESTGetAPICurrentUserGuildsResult as Guilds,
-	RESTGetAPIGuildScheduledEventsResult,
+	RESTGetAPIGuildScheduledEventsResult as Events,
 } from "discord-api-types/v10";
 
 import { APIBase, APIRoutes } from "./helpers";
@@ -32,115 +32,136 @@ import { GuildModal } from "./components/GuildModal";
 const localizer = momentLocalizer(moment);
 const { Drawer } = getDrawerHelpers(256);
 
-type SelectedGuilds = Record<string, boolean>;
-const guildReducer = (state: Record<string, boolean>, action: { type: "add" | "remove"; id: string }) => {
-	switch (action.type) {
-		case "add":
-			return setSelectedGuilds({ ...state, [action.id]: true });
-		case "remove":
-			delete state[action.id];
-			return setSelectedGuilds(state);
+type UserGuild = Guild & { calendarBotIsIn: boolean; selected: boolean; events: Events };
+type UserGuilds = Record<string, UserGuild>;
+
+const makeEventsUrl = (guildIds: string[]) => {
+	const eventsUrl = new URL(`${APIBase}/${APIRoutes.Events}`);
+	eventsUrl.searchParams.append("guildIds", guildIds.join(","));
+	return eventsUrl.href;
+};
+
+// const missingGuilds = Array.from(selectedGuilds).filter((id) => events[id] === undefined);
+// if (missingGuilds.length === 0) return;
+//
+//
+// // Fetch guild events
+
+type GuildEvents = Record<string, Events>;
+
+type GuildsReducerActions =
+	| { do: "set"; guilds: UserGuilds }
+	| { do: "unselect"; id: string }
+	| { do: "select"; id: string; events: Events }
+	| { do: "updateEvents"; events: GuildEvents };
+const guildsReducer = (state: UserGuilds, action: GuildsReducerActions) => {
+	switch (action.do) {
+		case "set":
+			return setGuildsState(action.guilds);
+		case "unselect":
+			return setGuildsState({ ...state, [action.id]: { ...state[action.id], selected: false, events: [] } });
+		case "select":
+			return setGuildsState({ ...state, [action.id]: { ...state[action.id], events: action.events, selected: true } });
+		case "updateEvents":
+			const newState = { ...state };
+			for (const id in action.events) newState[id].events = action.events[id];
+			return setGuildsState(newState);
 		default:
 			throw new Error("No action specified for guildReducer!");
 	}
 };
 
-const getSelectedDefaults = () => {
-	let selectedDefaults: SelectedGuilds = {};
-	let sDString = localStorage.getItem("selectedGuilds");
-	if (sDString !== null) {
+const getGuildsState = () => {
+	let guildsState: UserGuilds = {};
+	let guildsStateString = localStorage.getItem("guilds");
+	if (guildsStateString !== null) {
 		try {
-			selectedDefaults = JSON.parse(sDString);
+			guildsState = JSON.parse(guildsStateString);
 		} catch {}
 	}
-	return selectedDefaults;
+	return guildsState;
 };
-const setSelectedGuilds = (selectedGuilds: SelectedGuilds): SelectedGuilds => {
-	localStorage.setItem("selectedGuilds", JSON.stringify(selectedGuilds));
-	return selectedGuilds;
+const setGuildsState = (guilds: UserGuilds): UserGuilds => {
+	localStorage.setItem("guilds", JSON.stringify(guilds));
+	return guilds;
 };
+
+const buildCalendarEvents = (guilds: UserGuilds) =>
+	Object.values(guilds).flatMap((guild) =>
+		guild.events.map(
+			(event): CalendarEvent => ({
+				title: (
+					<>
+						{<GuildIcon guild={guild} size={24} />}
+						{event.name}
+					</>
+				),
+				start: event.scheduled_start_time ? new Date(event.scheduled_start_time) : undefined,
+				end: event.scheduled_end_time ? new Date(event.scheduled_end_time) : new Date(new Date(event.scheduled_start_time).getTime() + 1000 * 60 * 60),
+			})
+		)
+	);
 
 export const Home = () => {
 	const { headers } = useDiscordOAuth();
 
-	const [userGuilds, setUserGuilds] = useState<Record<string, Guild>>();
-
-	const [selectedGuilds, dispatchSelected] = useReducer(guildReducer, getSelectedDefaults());
-	type BotGuilds = Set<string>;
-	const [botGuilds, setBotGuilds] = useState<BotGuilds>();
+	const [guilds, dispatchGuilds] = useReducer(guildsReducer, getGuildsState());
 
 	// Viewstates
 	const [drawerOpen, setDrawerOpen] = useState(false);
-	const handleDrawerOpen = () => setDrawerOpen(true);
-	const handleDrawerClose = () => setDrawerOpen(false);
 
 	const [modalOpen, setModalOpen] = useState(false);
 	const [modalGuild, setModalGuild] = useState<Guild>();
-	const handleModalClose = () => setModalOpen(false);
+
+	const updateSelectedGuildEvents = () => {
+		fetch(makeEventsUrl(Object.keys(guilds).filter((id) => guilds[id].selected)))
+			.then((result) => result.json<GuildEvents>())
+			.then((events) => dispatchGuilds({ do: "updateEvents", events }));
+	};
+
+	const init = async () => {
+		// Fetch user guilds
+		const userGuilds = await fetchWithTimeout(`${RouteBases.api}/${Routes.userGuilds()}`, { headers }).then((result) => result.json<Guilds>());
+
+		const botGuildsUrl = new URL(`${APIBase}/${APIRoutes.Guilds}`);
+		botGuildsUrl.searchParams.append("guildIds", userGuilds.map((guild) => guild.id).join(","));
+		// Fetch bot guilds
+		const botGuilds = await fetch(botGuildsUrl.href)
+			.then((result) => result.json<string[]>())
+			.then((result) => new Set(result));
+
+		const _guilds: UserGuilds = {};
+
+		for (const guild of userGuilds) {
+			const calendarBotIsIn = botGuilds.has(guild.id);
+			if (!calendarBotIsIn) _guilds[guild.id] = { ...guild, calendarBotIsIn, selected: false, events: [] };
+			else {
+				const selected = guilds[guild.id]?.selected || false;
+				const events = guilds[guild.id]?.events || [];
+				_guilds[guild.id] = { ...guild, calendarBotIsIn, selected, events };
+			}
+		}
+		dispatchGuilds({ do: "set", guilds: _guilds });
+		updateSelectedGuildEvents();
+	};
 
 	useEffect(() => {
-		// Fetch user guilds
-		fetchWithTimeout(`${RouteBases.api}/${Routes.userGuilds()}`, { headers })
-			.then((result) => result.json<Guilds>())
-			.then((userGuilds) => userGuilds.reduce((userGuilds, guild) => ({ ...userGuilds, [guild.id]: guild }), {} as Record<string, Guild>))
-			.then(setUserGuilds)
-			.catch(console.error);
+		init();
 	}, []);
 
-	useEffect(() => {
-		if (userGuilds !== undefined) {
-			const botGuildsUrl = new URL(`${APIBase}/${APIRoutes.Guilds}`);
-			botGuildsUrl.searchParams.append("guildIds", Object.keys(userGuilds).join(","));
-			// Fetch bot guilds
-			fetch(botGuildsUrl.href)
-				.then((result) => result.json<BotGuilds>())
-				.then((result) => new Set(result))
-				.then(setBotGuilds)
-				.catch(console.error);
-		}
-	}, [userGuilds]);
-
-	type GuildEvents = Record<string, RESTGetAPIGuildScheduledEventsResult>;
-	const [events, setEvents] = useState<GuildEvents>();
-
-	useEffect(() => {
-		const _selected = Object.keys(selectedGuilds).filter((id) => events?.[id] === undefined);
-		if (_selected.length === 0) return;
-		const eventsUrl = new URL(`${APIBase}/${APIRoutes.Events}`);
-		eventsUrl.searchParams.append("guildIds", _selected.join(","));
-		// Fetch guild events
-		fetch(eventsUrl)
-			.then((result) => result.json<GuildEvents>())
-			.then(setEvents)
-			.catch(console.error);
-	}, [selectedGuilds]);
-
-	let calendarEvents: CalendarEvent[] = [];
-	useEffect(() => {
-		if (events !== undefined) {
-			Object.values(events).map((events) =>
-				events.map(
-					(event): CalendarEvent => ({
-						title: (
-							<>
-								{userGuilds && <GuildIcon guild={userGuilds[event.guild_id]} size={24} />}
-								{event.name}
-							</>
-						),
-						start: event.scheduled_start_time ? new Date(event.scheduled_start_time) : undefined,
-						end: event.scheduled_end_time ? new Date(event.scheduled_end_time) : new Date(new Date(event.scheduled_start_time).getTime() + 1000 * 60 * 60),
-					})
-				)
-			);
-		}
-	}, [events]);
-
-	const onSelectGuild = (guild: Guild, isSelected: boolean) => {
-		if (botGuilds === undefined) return;
-		if (!botGuilds.has(guild.id)) {
+	const onSelect = (guild: UserGuild) => {
+		// If guild is being unselected just dispatch
+		if (guild.selected) dispatchGuilds({ do: "unselect", id: guild.id });
+		// If its being selected but the bot is not in that guild then prompt to add
+		else if (!guild.calendarBotIsIn) {
 			setModalGuild(guild);
 			setModalOpen(true);
-		} else dispatchSelected({ type: isSelected ? "remove" : "add", id: guild.id });
+			// If its being selected and the bot is in that guild then fetch events for that guild
+		} else {
+			fetch(makeEventsUrl([guild.id]))
+				.then((result) => result.json<GuildEvents>())
+				.then((events) => dispatchGuilds({ do: "select", id: guild.id, events: events[guild.id] }));
+		}
 	};
 
 	return (
@@ -156,7 +177,7 @@ export const Home = () => {
 						}}
 					>
 						<div style={{ overflow: "hidden", maxHeight: 64 }}>
-							<IconButton onClick={handleDrawerClose}>
+							<IconButton onClick={() => setDrawerOpen(false)}>
 								<ChevronLeftIcon />
 							</IconButton>
 							<span
@@ -175,7 +196,7 @@ export const Home = () => {
 						</div>
 					</div>
 				) : (
-					<IconButton onClick={handleDrawerOpen}>
+					<IconButton onClick={() => setDrawerOpen(true)}>
 						<MenuIcon />
 					</IconButton>
 				)}
@@ -187,24 +208,27 @@ export const Home = () => {
 				</List>
 				<Divider />
 				<List style={{ width: 256 }}>
-					{userGuilds &&
-						Object.values(userGuilds)?.map((guild) => {
-							const isSelected = selectedGuilds[guild.id] === true;
-							return (
-								<ListItemButton key={guild.id} onClick={() => onSelectGuild(guild, isSelected)} selected={isSelected} dense>
-									<GuildIcon guild={guild} />
-									<ListItemText id={guild.id} primary={guild.name} />
-								</ListItemButton>
-							);
-						})}
+					{Object.values(guilds).map((guild) => (
+						<ListItemButton key={guild.id} onClick={() => onSelect(guild)} selected={guild.selected} dense>
+							<GuildIcon guild={guild} />
+							<ListItemText id={guild.id} primary={guild.name} />
+						</ListItemButton>
+					))}
 					<Divider />
 				</List>
 			</Drawer>
-			<GuildModal modalOpen={modalOpen} onClose={handleModalClose} guild={modalGuild} />
+			<GuildModal
+				modalOpen={modalOpen}
+				onClose={(refresh) => {
+					setModalOpen(false);
+					if (refresh) init();
+				}}
+				guild={modalGuild}
+			/>
 			<Calendar
 				dayLayoutAlgorithm="overlap"
 				localizer={localizer}
-				events={calendarEvents}
+				events={buildCalendarEvents(guilds)}
 				startAccessor="start"
 				endAccessor="end"
 				style={{ height: "100vh", width: "100%", padding: 16 }}

@@ -8,7 +8,7 @@ redirectURL.searchParams.append("client_id", clientId);
 redirectURL.searchParams.append("scope", "bot");
 redirectURL.searchParams.append("permissions", "0");
 
-type AddGuildModalProps = { modalOpen: boolean; onClose: () => void; guild?: Guild };
+type AddGuildModalProps = { modalOpen: boolean; onClose: (refresh?: true) => void; guild?: Guild };
 
 export const GuildModal = ({ modalOpen, onClose, guild }: AddGuildModalProps) => {
 	const theme = useTheme();
@@ -21,7 +21,7 @@ export const GuildModal = ({ modalOpen, onClose, guild }: AddGuildModalProps) =>
 				justifyContent: "center",
 			}}
 			open={modalOpen}
-			onClose={onClose}
+			onClose={() => onClose()}
 		>
 			<Box
 				style={{
@@ -52,6 +52,7 @@ export const GuildModal = ({ modalOpen, onClose, guild }: AddGuildModalProps) =>
 							onClick={() => {
 								redirectURL.searchParams.append("guild_id", guild.id);
 								window.open(redirectURL.href);
+								onClose(true);
 							}}
 						>
 							<GuildIcon guild={guild} />
@@ -62,7 +63,7 @@ export const GuildModal = ({ modalOpen, onClose, guild }: AddGuildModalProps) =>
 						<br />
 					</>
 				)}
-				<Button variant="contained" color="error" onClick={onClose}>
+				<Button variant="contained" color="error" onClick={() => onClose()}>
 					<Typography variant="body2">Go Back</Typography>
 				</Button>
 			</Box>
