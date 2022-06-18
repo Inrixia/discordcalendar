@@ -11,10 +11,12 @@ export const events = Router({ base: "/v1/events" });
 const getEvents = (guildId: string, Authorization: string) => () =>
 	fetchWithTimeout(`${RouteBases.api}/${Routes.guildScheduledEvents(guildId)}`, { headers: { Authorization } }).then((res) => res.json<Events>());
 
-let eventsCache = new WorkerLookupCache<Events>();
+let eventsCache: WorkerLookupCache<Events>;
 events.get("/", async (req: Request, env: EnvInterface) => {
 	const ids = new URL(req.url).searchParams.get("guildIds");
 	if (ids === null) return genericResponse(400);
+
+	if (eventsCache === undefined) eventsCache = new WorkerLookupCache<Events>();
 
 	const guildEvents = await Promise.all(
 		ids.split(",").map(async (id) => {
