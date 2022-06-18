@@ -4,7 +4,7 @@ import { genericResponse, OPTIONS, patchResponse } from "@inrixia/cfworker-helpe
 import { v1 } from "./endpoints/v1";
 
 // Types
-import { type EnvInterface, SRequest } from "./types";
+import { type EnvInterface } from "./types";
 const router = Router();
 
 router
@@ -14,11 +14,10 @@ router
 	.all("*", () => genericResponse(404));
 
 export default {
-	fetch: async (request: SRequest, env: EnvInterface) => {
+	fetch: async (request: Request, env: EnvInterface) => {
 		env.auth = `Bot ${env.token}`;
-		request.env = env;
 		try {
-			return patchResponse(await router.handle(request));
+			return patchResponse(await router.handle(request, env));
 		} catch (err) {
 			return genericResponse(500, <Error>err);
 		}

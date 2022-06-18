@@ -12,5 +12,3 @@ export interface EnvInterface {
 }
 
 export const JWKUMK = "https://safetyabilitytests.com/user";
-
-export type SRequest = Request & ittyRquest & { env: EnvInterface };

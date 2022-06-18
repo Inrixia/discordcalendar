@@ -63,10 +63,10 @@ const setSelectedGuilds = (selectedGuilds: SelectedGuilds): SelectedGuilds => {
 export const Home = () => {
 	const { headers } = useDiscordOAuth();
 
-	const [guilds, setGuilds] = useState<Record<string, Guild>>();
+	const [userGuilds, setUserGuilds] = useState<Record<string, Guild>>();
 
 	const [selectedGuilds, dispatchSelected] = useReducer(guildReducer, getSelectedDefaults());
-	type BotGuilds = Record<string, 0>;
+	type BotGuilds = Set<string>;
 	const [botGuilds, setBotGuilds] = useState<BotGuilds>();
 
 	// Viewstates
@@ -82,16 +82,23 @@ export const Home = () => {
 		// Fetch user guilds
 		fetchWithTimeout(`${RouteBases.api}/${Routes.userGuilds()}`, { headers })
 			.then((result) => result.json<Guilds>())
-			.then((guilds) => guilds.reduce((guilds, guild) => ({ ...guilds, [guild.id]: guild }), {} as Record<string, Guild>))
-			.then(setGuilds)
-			.catch(console.error);
-
-		// Fetch bot guilds
-		fetch(`${APIBase}/${APIRoutes.Guilds}`)
-			.then((result) => result.json<BotGuilds>())
-			.then(setBotGuilds)
+			.then((userGuilds) => userGuilds.reduce((userGuilds, guild) => ({ ...userGuilds, [guild.id]: guild }), {} as Record<string, Guild>))
+			.then(setUserGuilds)
 			.catch(console.error);
 	}, []);
+
+	useEffect(() => {
+		if (userGuilds !== undefined) {
+			const botGuildsUrl = new URL(`${APIBase}/${APIRoutes.Guilds}`);
+			botGuildsUrl.searchParams.append("guildIds", Object.keys(userGuilds).join(","));
+			// Fetch bot guilds
+			fetch(botGuildsUrl.href)
+				.then((result) => result.json<BotGuilds>())
+				.then((result) => new Set(result))
+				.then(setBotGuilds)
+				.catch(console.error);
+		}
+	}, [userGuilds]);
 
 	type GuildEvents = Record<string, RESTGetAPIGuildScheduledEventsResult>;
 	const [events, setEvents] = useState<GuildEvents>();
@@ -116,7 +123,7 @@ export const Home = () => {
 					(event): CalendarEvent => ({
 						title: (
 							<>
-								{guilds && <GuildIcon guild={guilds[event.guild_id]} size={24} />}
+								{userGuilds && <GuildIcon guild={userGuilds[event.guild_id]} size={24} />}
 								{event.name}
 							</>
 						),
@@ -130,7 +137,7 @@ export const Home = () => {
 
 	const onSelectGuild = (guild: Guild, isSelected: boolean) => {
 		if (botGuilds === undefined) return;
-		if (botGuilds[guild.id] === undefined) {
+		if (!botGuilds.has(guild.id)) {
 			setModalGuild(guild);
 			setModalOpen(true);
 		} else dispatchSelected({ type: isSelected ? "remove" : "add", id: guild.id });
@@ -180,8 +187,8 @@ export const Home = () => {
 				</List>
 				<Divider />
 				<List style={{ width: 256 }}>
-					{guilds &&
-						Object.values(guilds)?.map((guild) => {
+					{userGuilds &&
+						Object.values(userGuilds)?.map((guild) => {
 							const isSelected = selectedGuilds[guild.id] === true;
 							return (
 								<ListItemButton key={guild.id} onClick={() => onSelectGuild(guild, isSelected)} selected={isSelected} dense>

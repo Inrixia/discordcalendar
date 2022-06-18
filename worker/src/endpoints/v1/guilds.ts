@@ -1,21 +1,27 @@
 import { Router } from "itty-router";
 import { RESTGetAPICurrentUserGuildsResult, RouteBases, Routes } from "discord-api-types/v10";
 
-import { fetchWithTimeout, jsonResponse } from "@inrixia/cfworker-helpers";
+import { fetchWithTimeout, genericResponse, jsonResponse } from "@inrixia/cfworker-helpers";
+import { WorkerCache } from "../../WorkerCache";
 
-import type { SRequest } from "../../types";
+import type { EnvInterface } from "../../types";
 
 export const guilds = Router({ base: "/v1/guilds" });
 
-guilds.get("/", async (req: SRequest) => {
-	const guilds = await fetchWithTimeout(`${RouteBases.api}/${Routes.userGuilds()}`, { headers: { Authorization: req.env.auth } })
+type Guilds = Set<string>;
+const fetchBotGuilds = (env: EnvInterface) =>
+	fetchWithTimeout(`${RouteBases.api}/${Routes.userGuilds()}`, { headers: { Authorization: env.auth } })
 		.then((res) => res.json<RESTGetAPICurrentUserGuildsResult>())
-		.then((botGuilds) =>
-			botGuilds.reduce((guilds, guild) => {
-				guilds[guild.id] = 0;
-				return guilds;
-			}, {} as Record<string, 0>)
-		);
+		.then((guilds) => new Set(guilds.map((guild) => guild.id)));
 
-	return jsonResponse(guilds);
+let guildsCache: WorkerCache<Guilds>;
+guilds.get("/", async (req: Request, env: EnvInterface) => {
+	const ids = new URL(req.url).searchParams.get("guildIds");
+	if (ids === null) return genericResponse(400);
+
+	// Init the cache if it doesn't exist
+	if (guildsCache === undefined) guildsCache = new WorkerCache<Guilds>(() => fetchBotGuilds(env), 5000);
+
+	const botGuilds = await guildsCache.get();
+	return jsonResponse(ids.split(",").filter((id) => botGuilds.has(id)));
 });

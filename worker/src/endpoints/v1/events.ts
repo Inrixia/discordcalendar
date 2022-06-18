@@ -3,8 +3,7 @@ import { RouteBases, Routes, RESTGetAPIGuildScheduledEventsResult } from "discor
 
 import { fetchWithTimeout, genericResponse, jsonResponse } from "@inrixia/cfworker-helpers";
 
-import type { SRequest } from "../../types";
-import { guilds } from "./guilds";
+import type { EnvInterface } from "../../types";
 
 export const events = Router({ base: "/v1/events" });
 
@@ -13,11 +12,11 @@ const getEvents = async (guildId: string, auth: string) =>
 		res.json<RESTGetAPIGuildScheduledEventsResult>()
 	);
 
-events.get("/", async (req: SRequest) => {
+events.get("/", async (req: Request, env: EnvInterface) => {
 	const ids = new URL(req.url).searchParams.get("guildIds");
 	if (ids === null) return genericResponse(400);
 
-	const guildEvents = await Promise.all(ids.split(",").flatMap(async (id) => ({ [id]: await getEvents(id, req.env.auth) })));
+	const guildEvents = await Promise.all(ids.split(",").flatMap(async (id) => ({ [id]: await getEvents(id, env.auth) })));
 	// Flatmap to compact into a single array
 	return jsonResponse(guildEvents.reduce((guilds, guild) => ({ ...guilds, ...guild })));
 });
