@@ -97,7 +97,7 @@ const buildCalendarEvents = (guilds: UserGuilds) =>
 					</div>
 				),
 				start: event.scheduled_start_time ? new Date(event.scheduled_start_time) : undefined,
-				end: event.scheduled_end_time ? new Date(event.scheduled_end_time) : new Date(new Date(event.scheduled_start_time).getTime() + 1000 * 60 * 30),
+				end: event.scheduled_end_time ? new Date(event.scheduled_end_time) : new Date(new Date(event.scheduled_start_time).getTime() + 1000 * 60 * 60),
 				// @ts-expect-error Yea the types seem wrong for this, its resourceId
 				resourceId: guild.id,
 			})
