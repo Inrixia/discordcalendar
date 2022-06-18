@@ -6,7 +6,7 @@ import {
 	RouteBases,
 	RESTAPIPartialCurrentUserGuild as Guild,
 	RESTGetAPICurrentUserGuildsResult as Guilds,
-	APIGuildScheduledEvent,
+	RESTGetAPIGuildScheduledEventsResult,
 } from "discord-api-types/v10";
 
 import { APIBase, APIRoutes } from "./helpers";
@@ -28,8 +28,6 @@ import "./darkcalendar.scss";
 import { UserProfile } from "./components/UserProfile";
 import { GuildIcon } from "./components/GuildIcon";
 import { GuildModal } from "./components/GuildModal";
-
-export const clientId = "986978606351786065";
 
 const localizer = momentLocalizer(moment);
 const { Drawer } = getDrawerHelpers(256);
@@ -95,11 +93,11 @@ export const Home = () => {
 			.catch(console.error);
 	}, []);
 
-	type GuildEvents = APIGuildScheduledEvent[];
+	type GuildEvents = Record<string, RESTGetAPIGuildScheduledEventsResult>;
 	const [events, setEvents] = useState<GuildEvents>();
 
 	useEffect(() => {
-		const _selected = Object.keys(selectedGuilds);
+		const _selected = Object.keys(selectedGuilds).filter((id) => events?.[id] === undefined);
 		if (_selected.length === 0) return;
 		const eventsUrl = new URL(`${APIBase}/${APIRoutes.Events}`);
 		eventsUrl.searchParams.append("guildIds", _selected.join(","));
@@ -110,18 +108,25 @@ export const Home = () => {
 			.catch(console.error);
 	}, [selectedGuilds]);
 
-	const calendarEvents = (events || []).map(
-		(event): CalendarEvent => ({
-			title: (
-				<>
-					{guilds && <GuildIcon guild={guilds[event.guild_id]} size={24} />}
-					{event.name}
-				</>
-			),
-			start: event.scheduled_start_time ? new Date(event.scheduled_start_time) : undefined,
-			end: event.scheduled_end_time ? new Date(event.scheduled_end_time) : new Date(new Date(event.scheduled_start_time).getTime() + 1000 * 60 * 60),
-		})
-	);
+	let calendarEvents: CalendarEvent[] = [];
+	useEffect(() => {
+		if (events !== undefined) {
+			Object.values(events).map((events) =>
+				events.map(
+					(event): CalendarEvent => ({
+						title: (
+							<>
+								{guilds && <GuildIcon guild={guilds[event.guild_id]} size={24} />}
+								{event.name}
+							</>
+						),
+						start: event.scheduled_start_time ? new Date(event.scheduled_start_time) : undefined,
+						end: event.scheduled_end_time ? new Date(event.scheduled_end_time) : new Date(new Date(event.scheduled_start_time).getTime() + 1000 * 60 * 60),
+					})
+				)
+			);
+		}
+	}, [events]);
 
 	const onSelectGuild = (guild: Guild, isSelected: boolean) => {
 		if (botGuilds === undefined) return;
