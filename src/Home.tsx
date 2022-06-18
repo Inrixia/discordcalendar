@@ -104,6 +104,19 @@ const buildCalendarEvents = (guilds: UserGuilds) =>
 		)
 	);
 
+const buildCalendarResources = (guilds: UserGuilds) =>
+	Object.values(guilds)
+		.filter((guild) => guild.events.length > 0)
+		.map((guild) => ({
+			id: guild.id,
+			name: (
+				<div style={{ display: "flex" }}>
+					<GuildIcon guild={guild} size={24} style={{ marginRight: 4 }} />
+					{guild.name}
+				</div>
+			),
+		}));
+
 export const Home = () => {
 	const { headers } = useDiscordOAuth();
 
@@ -235,7 +248,7 @@ export const Home = () => {
 				events={buildCalendarEvents(guilds)}
 				startAccessor="start"
 				endAccessor="end"
-				resources={Object.values(guilds).filter((guild) => guild.events.length > 0)}
+				resources={buildCalendarResources(guilds)}
 				resourceIdAccessor="id"
 				resourceTitleAccessor="name"
 				step={60}
