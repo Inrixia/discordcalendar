@@ -1,7 +1,7 @@
 export type WCGenerator<Value> = () => Promise<Value> | Value;
 
 export class WorkerCache<CacheValue> {
-	private value?: CacheValue;
+	private value: CacheValue | Promise<CacheValue>;
 
 	private generator: WCGenerator<CacheValue>;
 	private ttl: number;
@@ -11,13 +11,14 @@ export class WorkerCache<CacheValue> {
 		this.generator = generator;
 		this.ttl = ttl;
 		this.deathDate = Date.now();
+		this.value = generator();
 	}
 
-	public async get(reGenerate?: boolean) {
+	public get(reGenerate?: boolean) {
 		if (reGenerate === true || this.deathDate < Date.now()) {
-			this.value = await this.generator();
+			this.value = this.generator();
 			this.deathDate = Date.now() + this.ttl;
 		}
-		return this.value!;
+		return this.value;
 	}
 }
