@@ -16,12 +16,8 @@ $background: #2f3136;
 
 @import "react-big-calendar/lib/sass/styles";
 
+.rbc-timeslot-group,
+.rbc-label.rbc-time-header-gutter,
 .rbc-calendar {
-	background: $background;
-}
-.rbc-timeslot-group {
-	background: $background;
-}
-.rbc-time-header-gutter {
-	background: $background;
+	background: #2f3136;
 }

@@ -238,7 +238,6 @@ export const Home = () => {
 				resources={Object.values(guilds).filter((guild) => guild.events.length > 0)}
 				resourceIdAccessor="id"
 				resourceTitleAccessor="name"
-				popup
 				step={60}
 				style={{ height: "100vh", width: "100%", padding: 16 }}
 			/>
