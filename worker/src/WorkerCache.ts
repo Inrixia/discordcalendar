@@ -1,11 +1,13 @@
+export type WCGenerator<Value> = () => Promise<Value> | Value;
+
 export class WorkerCache<CacheValue> {
 	private value?: CacheValue;
 
-	private generator: () => Promise<CacheValue> | CacheValue;
+	private generator: WCGenerator<CacheValue>;
 	private ttl: number;
 	private deathDate: number;
 
-	constructor(generator: () => Promise<CacheValue> | CacheValue, ttl: number) {
+	constructor(generator: WCGenerator<CacheValue>, ttl: number) {
 		this.generator = generator;
 		this.ttl = ttl;
 		this.deathDate = Date.now();

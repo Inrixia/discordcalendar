@@ -9,7 +9,7 @@ import type { EnvInterface } from "../../types";
 export const guilds = Router({ base: "/v1/guilds" });
 
 type Guilds = Set<string>;
-const fetchBotGuilds = (env: EnvInterface) =>
+const fetchBotGuilds = (env: EnvInterface) => () =>
 	fetchWithTimeout(`${RouteBases.api}/${Routes.userGuilds()}`, { headers: { Authorization: env.auth } })
 		.then((res) => res.json<RESTGetAPICurrentUserGuildsResult>())
 		.then((guilds) => new Set(guilds.map((guild) => guild.id)));
@@ -20,7 +20,7 @@ guilds.get("/", async (req: Request, env: EnvInterface) => {
 	if (ids === null) return genericResponse(400);
 
 	// Init the cache if it doesn't exist
-	if (guildsCache === undefined) guildsCache = new WorkerCache<Guilds>(() => fetchBotGuilds(env), 5000);
+	if (guildsCache === undefined) guildsCache = new WorkerCache<Guilds>(fetchBotGuilds(env), 5000);
 
 	const botGuilds = await guildsCache.get();
 	return jsonResponse(ids.split(",").filter((id) => botGuilds.has(id)));
