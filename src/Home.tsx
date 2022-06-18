@@ -88,7 +88,7 @@ const setGuildsState = (guilds: UserGuilds): UserGuilds => {
 
 const buildCalendarEvents = (guilds: UserGuilds) =>
 	Object.values(guilds).flatMap((guild) =>
-		guild.events.map(
+		(guild.events || []).map(
 			(event): CalendarEvent => ({
 				title: (
 					<>
