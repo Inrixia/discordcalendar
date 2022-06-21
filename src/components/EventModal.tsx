@@ -99,7 +99,7 @@ export const EventModal = ({ modalOpen, onClose, event, guild }: AddGuildModalPr
 					<TabPanel value="interested">
 						<Box sx={{ height: 260, overflow: "scroll", "&&::-webkit-scrollbar": { display: "none" } }}>
 							{event.users.map(({ user }) => (
-								<IconText text={user.username} icon={<UserAvatar style={{ marginRight: 8 }} user={user} size={24} />} style={{ marginBottom: 12 }} />
+								<IconText key={user.id} text={user.username} icon={<UserAvatar style={{ marginRight: 8 }} user={user} size={24} />} style={{ marginBottom: 12 }} />
 							))}
 						</Box>
 					</TabPanel>

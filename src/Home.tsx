@@ -157,7 +157,7 @@ export const Home = () => {
 	const { events, resources } = buildCalendarObjects(guildArray, options.onlyInterested ? user?.id : undefined);
 
 	return (
-		<>
+		<div style={{ display: "flex" }}>
 			<Drawer variant="permanent" open={drawerOpen} PaperProps={{ style: { background: "#202225" } }}>
 				{drawerOpen ? (
 					<div
@@ -207,9 +207,13 @@ export const Home = () => {
 					</>
 				)}
 				<Divider sx={dividerFix}>Ready</Divider>
-				<List style={{ width: 256 }}>{guildArray.map((guild) => guild.calendarBotIsIn && <GuildButton guild={guild} onClick={() => onSelect(guild)} />)}</List>
+				<List style={{ width: 256 }}>
+					{guildArray.map((guild) => guild.calendarBotIsIn && <GuildButton key={guild.id} guild={guild} onClick={() => onSelect(guild)} />)}
+				</List>
 				<Divider sx={dividerFix}>Missing Bot</Divider>
-				<List style={{ width: 256 }}>{guildArray.map((guild) => !guild.calendarBotIsIn && <GuildButton guild={guild} onClick={() => onSelect(guild)} />)}</List>
+				<List style={{ width: 256 }}>
+					{guildArray.map((guild) => !guild.calendarBotIsIn && <GuildButton key={guild.id} guild={guild} onClick={() => onSelect(guild)} />)}
+				</List>
 			</Drawer>
 			{guildModal.open && (
 				<GuildModal
@@ -237,7 +241,7 @@ export const Home = () => {
 				onSelectEvent={onSelectEvent}
 				style={{ height: "100vh", width: "100%", padding: 16 }}
 			/>
-		</>
+		</div>
 	);
 };
 
