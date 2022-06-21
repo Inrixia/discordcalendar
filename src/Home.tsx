@@ -9,13 +9,13 @@ import {
 	RESTGetAPIGuildScheduledEventsResult as Events,
 } from "discord-api-types/v10";
 
-import { APIBase, APIRoutes } from "./helpers";
+import { APIBase, APIRoutes, getLocalStorage } from "./helpers";
 import { fetchWithTimeout } from "@inrixia/cfworker-helpers";
 
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Calendar, momentLocalizer, Event as CalendarEvent } from "react-big-calendar";
 import moment from "moment";
-import { Divider, List, ListItem, ListItemButton, ListItemText, Typography } from "@mui/material";
+import { Checkbox, Divider, FormControlLabel, List, ListItemButton, ListItemText, Tooltip } from "@mui/material";
 import { getDrawerHelpers } from "./components/Drawer";
 
 // Icons
@@ -41,20 +41,14 @@ const makeEventsUrl = (guildIds: string[]) => {
 	return eventsUrl.href;
 };
 
-// const missingGuilds = Array.from(selectedGuilds).filter((id) => events[id] === undefined);
-// if (missingGuilds.length === 0) return;
-//
-//
-// // Fetch guild events
-
 type GuildEvents = Record<string, Events>;
 
-type GuildsReducerActions =
+type GuildsReducerAction =
 	| { do: "set"; guilds: UserGuilds }
 	| { do: "unselect"; id: string }
 	| { do: "select"; id: string; events: Events }
 	| { do: "updateEvents"; events: GuildEvents };
-const guildsReducer = (state: UserGuilds, action: GuildsReducerActions) => {
+const guildsReducer = (state: UserGuilds, action: GuildsReducerAction) => {
 	switch (action.do) {
 		case "set":
 			return setGuildsState(action.guilds);
@@ -70,17 +64,6 @@ const guildsReducer = (state: UserGuilds, action: GuildsReducerActions) => {
 			throw new Error("No action specified for guildReducer!");
 	}
 };
-
-const getGuildsState = () => {
-	let guildsState: UserGuilds = {};
-	let guildsStateString = localStorage.getItem("guilds");
-	if (guildsStateString !== null) {
-		try {
-			guildsState = cleanOldState(JSON.parse(guildsStateString));
-		} catch {}
-	}
-	return guildsState;
-};
 const cleanOldState = (guildsState: UserGuilds) => {
 	for (const id in guildsState) {
 		// Reset events on unselected guilds
@@ -91,6 +74,19 @@ const cleanOldState = (guildsState: UserGuilds) => {
 const setGuildsState = (guilds: UserGuilds): UserGuilds => {
 	localStorage.setItem("guilds", JSON.stringify(guilds));
 	return guilds;
+};
+
+type Options = {
+	onlyInterested: boolean;
+};
+type OptionsReducerAction = { do: "toggleOnlyInterested" };
+const optionsReducer = (state: Options, action: OptionsReducerAction) => {
+	switch (action.do) {
+		case "toggleOnlyInterested":
+			return { ...state, onlyInterested: !state.onlyInterested };
+		default:
+			throw new Error("No action specified for optionsReducer!");
+	}
 };
 
 const buildCalendarEvents = (guilds: UserGuilds) =>
@@ -133,7 +129,8 @@ const dividerFix = {
 export const Home = () => {
 	const { headers } = useDiscordOAuth();
 
-	const [guilds, dispatchGuilds] = useReducer(guildsReducer, getGuildsState());
+	const [guilds, dispatchGuilds] = useReducer(guildsReducer, cleanOldState(getLocalStorage("guilds", {} as UserGuilds)));
+	const [options, dispatchOptions] = useReducer(optionsReducer, getLocalStorage("options", { onlyInterested: false } as Options));
 
 	// Viewstates
 	const [drawerOpen, setDrawerOpen] = useState(false);
@@ -238,16 +235,22 @@ export const Home = () => {
 				)}
 				<Divider />
 				<UserProfile />
+				{drawerOpen && (
+					<>
+						<Divider sx={dividerFix}>Options</Divider>
+						<Tooltip title="Only show events you have checked interested for">
+							<FormControlLabel
+								style={{ marginLeft: 8 }}
+								control={<Checkbox onClick={() => dispatchOptions({ do: "toggleOnlyInterested" })} checked={options.onlyInterested} />}
+								label="Interested Only"
+							/>
+						</Tooltip>
+					</>
+				)}
 				<Divider sx={dividerFix}>Ready</Divider>
-				<List style={{ width: 256 }}>
-					{guildArray.map((guild) => guild.calendarBotIsIn && <GuildButton guild={guild} onClick={() => onSelect(guild)} />)}
-					<Divider />
-				</List>
+				<List style={{ width: 256 }}>{guildArray.map((guild) => guild.calendarBotIsIn && <GuildButton guild={guild} onClick={() => onSelect(guild)} />)}</List>
 				<Divider sx={dividerFix}>Missing Bot</Divider>
-				<List style={{ width: 256 }}>
-					{guildArray.map((guild) => !guild.calendarBotIsIn && <GuildButton guild={guild} onClick={() => onSelect(guild)} />)}
-					<Divider />
-				</List>
+				<List style={{ width: 256 }}>{guildArray.map((guild) => !guild.calendarBotIsIn && <GuildButton guild={guild} onClick={() => onSelect(guild)} />)}</List>
 			</Drawer>
 			<GuildModal
 				modalOpen={modalOpen}

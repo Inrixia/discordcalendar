@@ -18,3 +18,13 @@ export const APIRoutes = {
 	Guilds: "/v1/guilds",
 	Events: "/v1/events",
 } as const;
+
+export const getLocalStorage = <S extends any>(key: string, defaultState: S): S => {
+	const stateString = localStorage.getItem(key);
+	if (stateString !== null) {
+		try {
+			defaultState = JSON.parse(stateString);
+		} catch {}
+	}
+	return defaultState;
+};
