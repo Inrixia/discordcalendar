@@ -38,7 +38,7 @@ export const EventModal = ({ modalOpen, onClose, event, guild }: AddGuildModalPr
 			open={modalOpen}
 			onClose={() => onClose()}
 		>
-			<Card sx={{ background: "#36393F", height: 540 }}>
+			<Card sx={{ background: "#36393F", height: 540, width: 512 }}>
 				<IconButton
 					style={{
 						position: "absolute",
