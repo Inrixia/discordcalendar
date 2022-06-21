@@ -15,7 +15,7 @@ import { fetchWithTimeout } from "@inrixia/cfworker-helpers";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Calendar, momentLocalizer, Event as CalendarEvent } from "react-big-calendar";
 import moment from "moment";
-import { Divider, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
+import { Divider, List, ListItem, ListItemButton, ListItemText, Typography } from "@mui/material";
 import { getDrawerHelpers } from "./components/Drawer";
 
 // Icons
@@ -125,6 +125,11 @@ const buildCalendarResources = (guilds: UserGuilds) =>
 			),
 		}));
 
+const dividerFix = {
+	"&::before": { position: "inherit" },
+	"&::after": { position: "inherit" },
+};
+
 export const Home = () => {
 	const { headers } = useDiscordOAuth();
 
@@ -193,8 +198,10 @@ export const Home = () => {
 		const discordEvent = guilds;
 	};
 
+	const guildArray = Object.values(guilds);
+
 	return (
-		<div style={{ display: "flex" }}>
+		<>
 			<Drawer variant="permanent" open={drawerOpen} PaperProps={{ style: { background: "#202225" } }}>
 				{drawerOpen ? (
 					<div
@@ -230,19 +237,15 @@ export const Home = () => {
 					</IconButton>
 				)}
 				<Divider />
-				<List>
-					<ListItem>
-						<UserProfile />
-					</ListItem>
-				</List>
-				<Divider />
+				<UserProfile />
+				<Divider sx={dividerFix}>Ready</Divider>
 				<List style={{ width: 256 }}>
-					{Object.values(guilds).map((guild) => (
-						<ListItemButton key={guild.id} onClick={() => onSelect(guild)} selected={guild.selected} dense>
-							<GuildIcon guild={guild} style={{ marginRight: 16 }} />
-							<ListItemText id={guild.id} primary={guild.name} />
-						</ListItemButton>
-					))}
+					{guildArray.map((guild) => guild.calendarBotIsIn && <GuildButton guild={guild} onClick={() => onSelect(guild)} />)}
+					<Divider />
+				</List>
+				<Divider sx={dividerFix}>Missing Bot</Divider>
+				<List style={{ width: 256 }}>
+					{guildArray.map((guild) => !guild.calendarBotIsIn && <GuildButton guild={guild} onClick={() => onSelect(guild)} />)}
 					<Divider />
 				</List>
 			</Drawer>
@@ -267,6 +270,13 @@ export const Home = () => {
 				onSelectEvent={onSelectEvent}
 				style={{ height: "100vh", width: "100%", padding: 16 }}
 			/>
-		</div>
+		</>
 	);
 };
+
+const GuildButton = ({ guild, onClick }: { guild: UserGuild; onClick: () => void }) => (
+	<ListItemButton key={guild.id} onClick={onClick} selected={guild.selected} dense>
+		<GuildIcon guild={guild} style={{ marginRight: 16 }} />
+		<ListItemText id={guild.id} primary={guild.name} />
+	</ListItemButton>
+);
