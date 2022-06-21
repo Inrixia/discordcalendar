@@ -9,6 +9,7 @@
 		"@inrixia/cfworker-helpers": "github:Inrixia/cfworker-helpers",
 		"@inrixia/helpers": "^1.23.3",
 		"@mui/icons-material": "^5.8.4",
+		"@mui/lab": "^5.0.0-alpha.86",
 		"@mui/material": "^5.8.4",
 		"@types/node": "^18.0.0",
 		"@types/react": "^18.0.14",

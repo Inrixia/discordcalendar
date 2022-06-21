@@ -3,17 +3,19 @@ import { GuildIcon } from "./GuildIcon";
 import { clientId } from "../helpers";
 
 // Types
-import type { RESTAPIPartialCurrentUserGuild as Guild } from "discord-api-types/v10";
+import { UserGuild } from "../types";
 
 const redirectURL = new URL(`https://discord.com/oauth2/authorize`);
 redirectURL.searchParams.append("client_id", clientId);
 redirectURL.searchParams.append("scope", "bot");
 redirectURL.searchParams.append("permissions", "0");
 
-type AddGuildModalProps = { modalOpen: boolean; onClose: (refresh?: true) => void; guild?: Guild };
+type AddGuildModalProps = { modalOpen: boolean; onClose: (refresh?: true) => void; guild?: UserGuild };
 
 export const GuildModal = ({ modalOpen, onClose, guild }: AddGuildModalProps) => {
 	const theme = useTheme();
+
+	if (guild === undefined) return null;
 
 	return (
 		<Modal

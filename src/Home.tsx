@@ -11,6 +11,7 @@ import { getDrawerHelpers } from "./components/Drawer";
 import { UserProfile } from "./components/UserProfile";
 import { GuildIcon } from "./components/GuildIcon";
 import { GuildModal } from "./components/GuildModal";
+import { EventModal } from "./components/EventModal";
 
 // Icons
 import IconButton from "@mui/material/IconButton";
@@ -87,8 +88,8 @@ export const Home = () => {
 
 	// Viewstates
 	const [drawerOpen, setDrawerOpen] = useState(false);
-
-	const [guildModal, setGuildModal] = useState<{ open: boolean; guild?: Guild }>({ open: false });
+	const [guildModal, setGuildModal] = useState<{ open: boolean; guild?: UserGuild }>({ open: false });
+	const [eventModal, setEventModal] = useState<{ open: boolean; event?: Event; guild?: UserGuild }>({ open: false });
 
 	const updateSelectedGuildEvents = () => {
 		const selectedGuildIds = Object.keys(guilds).filter((id) => guilds[id].selected);
@@ -143,9 +144,14 @@ export const Home = () => {
 		}
 	};
 
-	const onSelectEvent = (event: CalendarEvent) => {
-		console.log("clicky!");
-	};
+	const onSelectEvent = (event: CalendarEvent) =>
+		setEventModal({
+			open: true,
+			// @ts-expect-error Custom property set in buildCalendarObjects for ease of accessing the discord event
+			event: event.discordEvent,
+			// @ts-expect-error Same as above
+			guild: event.discordGuild,
+		});
 
 	const guildArray = Object.values(guilds);
 	const { events, resources } = buildCalendarObjects(guildArray, options.onlyInterested ? user?.id : undefined);
@@ -205,14 +211,19 @@ export const Home = () => {
 				<Divider sx={dividerFix}>Missing Bot</Divider>
 				<List style={{ width: 256 }}>{guildArray.map((guild) => !guild.calendarBotIsIn && <GuildButton guild={guild} onClick={() => onSelect(guild)} />)}</List>
 			</Drawer>
-			<GuildModal
-				modalOpen={guildModal.open}
-				onClose={(refresh) => {
-					setGuildModal({ open: false });
-					if (refresh) init();
-				}}
-				guild={guildModal.guild}
-			/>
+			{guildModal.open && (
+				<GuildModal
+					modalOpen={guildModal.open}
+					onClose={(refresh) => {
+						setGuildModal({ open: false });
+						if (refresh) init();
+					}}
+					guild={guildModal.guild}
+				/>
+			)}
+			{eventModal.open && (
+				<EventModal modalOpen={eventModal.open} onClose={() => setEventModal({ open: false })} event={eventModal.event!} guild={eventModal.guild!} />
+			)}
 			<Calendar
 				dayLayoutAlgorithm="overlap"
 				localizer={localizer}

@@ -23,7 +23,8 @@ export const buildCalendarObjects = (userGuilds: UserGuild[], onlyThisUser?: str
 					end: event.scheduled_end_time ? new Date(event.scheduled_end_time) : new Date(new Date(event.scheduled_start_time).getTime() + 1000 * 60 * 60),
 					// @ts-expect-error Yea the types seem wrong for this, its resourceId. Also adding discordEventId here for convenience
 					resourceId: guild.id,
-					discordEventId: event.id,
+					discordEvent: event,
+					discordGuild: guild,
 				})
 			)
 	);
