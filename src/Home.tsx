@@ -1,4 +1,4 @@
-import { Box, Button, Checkbox, CircularProgress, Divider, FormControlLabel, List, ListItemButton, ListItemText, Tooltip } from "@mui/material";
+import { Box, Button, Checkbox, CircularProgress, Divider, FormControlLabel, Link, List, ListItemButton, ListItemText, Tooltip } from "@mui/material";
 import { Calendar, momentLocalizer, Event as CalendarEvent } from "react-big-calendar";
 import { useEffect, useReducer, useState } from "react";
 import moment from "moment";
@@ -178,19 +178,21 @@ export const Home = () => {
 							<IconButton onClick={() => setDrawerOpen(false)}>
 								<ChevronLeftIcon />
 							</IconButton>
-							<span
-								style={{
-									textTransform: "uppercase",
-									fontWeight: "bold",
-									fontSize: 12,
-									letterSpacing: "1px",
-									textAlign: "center",
-									margin: "auto",
-									marginLeft: 16,
-								}}
-							>
-								Discord Calendar
-							</span>
+							<Link href="https://github.com/Inrixia/discordcalendar" underline="none">
+								<span
+									style={{
+										textTransform: "uppercase",
+										fontWeight: "bold",
+										fontSize: 12,
+										letterSpacing: "1px",
+										textAlign: "center",
+										margin: "auto",
+										marginLeft: 16,
+									}}
+								>
+									Discord Calendar
+								</span>
+							</Link>
 						</div>
 					</div>
 				) : (
