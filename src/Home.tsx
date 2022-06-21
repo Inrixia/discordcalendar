@@ -27,7 +27,7 @@ import { fetchWithTimeout } from "@inrixia/cfworker-helpers";
 
 // Types
 import type { UserGuilds, Event, UserGuild } from "./types";
-import type { RESTAPIPartialCurrentUserGuild as Guild, RESTGetAPICurrentUserGuildsResult as Guilds } from "discord-api-types/v10";
+import type { RESTAPIPartialCurrentUserGuild as Guild, RESTGetAPICurrentUserGuildsResult as Guilds, RESTGetAPIUserResult as User } from "discord-api-types/v10";
 
 const localizer = momentLocalizer(moment);
 const { Drawer } = getDrawerHelpers(256);
@@ -81,6 +81,7 @@ const fetchGuildEvents = (id: string) => fetch(`${APIBase}/${APIRoutes.Events}/?
 export const Home = () => {
 	const { headers } = useDiscordOAuth();
 
+	const [user, setUser] = useState<User>();
 	const [guilds, dispatchGuilds] = useReducer(guildsReducer, cleanOldState(getLocalStorage("guilds", {} as UserGuilds)));
 	const [options, dispatchOptions] = useReducer(optionsReducer, getLocalStorage("options", { onlyInterested: false } as Options));
 
@@ -97,6 +98,11 @@ export const Home = () => {
 	};
 
 	const init = async () => {
+		// Fetch user
+		fetchWithTimeout(`${RouteBases.api}/${Routes.user()}`, { headers })
+			.then((result) => result.json<User>())
+			.then(setUser);
+
 		// Fetch user guilds
 		const userGuilds = await fetchWithTimeout(`${RouteBases.api}/${Routes.userGuilds()}`, { headers }).then((result) => result.json<Guilds>());
 
@@ -144,7 +150,7 @@ export const Home = () => {
 	};
 
 	const guildArray = Object.values(guilds);
-	const { events, resources } = buildCalendarObjects(guildArray);
+	const { events, resources } = buildCalendarObjects(guildArray, options.onlyInterested ? user?.id : undefined);
 
 	return (
 		<>
@@ -183,7 +189,7 @@ export const Home = () => {
 					</IconButton>
 				)}
 				<Divider />
-				<UserProfile />
+				<UserProfile user={user} />
 				{drawerOpen && (
 					<>
 						<Divider sx={dividerFix}>Options</Divider>
