@@ -7,6 +7,7 @@ import {
 	RESTAPIPartialCurrentUserGuild as Guild,
 	RESTGetAPICurrentUserGuildsResult as Guilds,
 	RESTGetAPIGuildScheduledEventsResult as Events,
+	RESTGetAPIGuildScheduledEventUsersResult as EventUsers,
 } from "discord-api-types/v10";
 
 import { APIBase, APIRoutes, getLocalStorage } from "./helpers";
@@ -16,7 +17,12 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Calendar, momentLocalizer, Event as CalendarEvent } from "react-big-calendar";
 import moment from "moment";
 import { Checkbox, Divider, FormControlLabel, List, ListItemButton, ListItemText, Tooltip } from "@mui/material";
+
+// Components
 import { getDrawerHelpers } from "./components/Drawer";
+import { UserProfile } from "./components/UserProfile";
+import { GuildIcon } from "./components/GuildIcon";
+import { GuildModal } from "./components/GuildModal";
 
 // Icons
 import IconButton from "@mui/material/IconButton";
@@ -25,23 +31,23 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 
 // CSS
 import "./darkcalendar.scss";
-import { UserProfile } from "./components/UserProfile";
-import { GuildIcon } from "./components/GuildIcon";
-import { GuildModal } from "./components/GuildModal";
+
+// Types
+import type { ValueOfA } from "@inrixia/helpers/ts";
 
 const localizer = momentLocalizer(moment);
 const { Drawer } = getDrawerHelpers(256);
 
-type UserGuild = Guild & { calendarBotIsIn: boolean; selected: boolean; events: Events };
-type UserGuilds = Record<string, UserGuild>;
+type Event = ValueOfA<Events> & { users: EventUsers };
 
-type GuildEvents = Record<string, Events>;
+type UserGuild = Guild & { calendarBotIsIn: boolean; selected: boolean; events: Event[] };
+type UserGuilds = Record<string, UserGuild>;
 
 type GuildsReducerAction =
 	| { do: "set"; guilds: UserGuilds }
 	| { do: "unselect"; id: string }
-	| { do: "select"; id: string; events: Events }
-	| { do: "updateEvents"; id: string; events: Events };
+	| { do: "select"; id: string; events: Event[] }
+	| { do: "updateEvents"; id: string; events: Event[] };
 const guildsReducer = (state: UserGuilds, action: GuildsReducerAction) => {
 	switch (action.do) {
 		case "set":
@@ -81,8 +87,10 @@ const optionsReducer = (state: Options, action: OptionsReducerAction) => {
 	}
 };
 
-const buildCalendarEvents = (guilds: UserGuilds) =>
-	Object.values(guilds).flatMap((guild) =>
+const buildCalendarObjects = (userGuilds: UserGuild[]) => {
+	const guilds = userGuilds.filter((guild) => guild.events.length > 0);
+
+	const events = guilds.flatMap((guild) =>
 		(guild.events || []).map(
 			(event): CalendarEvent => ({
 				title: (
@@ -99,26 +107,25 @@ const buildCalendarEvents = (guilds: UserGuilds) =>
 			})
 		)
 	);
+	const resources = guilds.map((guild) => ({
+		id: guild.id,
+		name: (
+			<div style={{ display: "flex" }}>
+				<GuildIcon guild={guild} size={24} style={{ marginRight: 4 }} />
+				{guild.name}
+			</div>
+		),
+	}));
 
-const buildCalendarResources = (guilds: UserGuilds) =>
-	Object.values(guilds)
-		.filter((guild) => guild.events.length > 0)
-		.map((guild) => ({
-			id: guild.id,
-			name: (
-				<div style={{ display: "flex" }}>
-					<GuildIcon guild={guild} size={24} style={{ marginRight: 4 }} />
-					{guild.name}
-				</div>
-			),
-		}));
+	return { events, resources };
+};
 
 const dividerFix = {
 	"&::before": { position: "inherit" },
 	"&::after": { position: "inherit" },
 };
 
-const fetchGuildEvents = (id: string) => fetch(`${APIBase}/${APIRoutes.Events}/?guildId=${id}`).then((result) => result.json<Events>());
+const fetchGuildEvents = (id: string) => fetch(`${APIBase}/${APIRoutes.Events}/?guildId=${id}`).then((result) => result.json<Event[]>());
 
 export const Home = () => {
 	const { headers } = useDiscordOAuth();
@@ -187,6 +194,8 @@ export const Home = () => {
 
 	const guildArray = Object.values(guilds);
 
+	const { events, resources } = buildCalendarObjects(guildArray);
+
 	return (
 		<>
 			<Drawer variant="permanent" open={drawerOpen} PaperProps={{ style: { background: "#202225" } }}>
@@ -253,10 +262,10 @@ export const Home = () => {
 			<Calendar
 				dayLayoutAlgorithm="overlap"
 				localizer={localizer}
-				events={buildCalendarEvents(guilds)}
+				events={events}
 				startAccessor="start"
 				endAccessor="end"
-				resources={buildCalendarResources(guilds)}
+				resources={resources}
 				resourceIdAccessor="id"
 				resourceTitleAccessor="name"
 				step={60}
