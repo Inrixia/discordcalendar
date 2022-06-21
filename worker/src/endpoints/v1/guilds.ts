@@ -20,7 +20,7 @@ guilds.get("/", async (req: Request, env: EnvInterface) => {
 	if (ids === null) return genericResponse(400);
 
 	// Init the cache if it doesn't exist
-	if (guildsCache === undefined) guildsCache = new WorkerCache<Guilds>(fetchBotGuilds(env), 5000);
+	if (guildsCache === undefined) guildsCache = new WorkerCache<Guilds>(fetchBotGuilds(env), 30000);
 
 	const botGuilds = await guildsCache.get();
 	return jsonResponse(ids.split(",").filter((id) => botGuilds.has(id)));

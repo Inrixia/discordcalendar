@@ -35,19 +35,13 @@ const { Drawer } = getDrawerHelpers(256);
 type UserGuild = Guild & { calendarBotIsIn: boolean; selected: boolean; events: Events };
 type UserGuilds = Record<string, UserGuild>;
 
-const makeEventsUrl = (guildIds: string[]) => {
-	const eventsUrl = new URL(`${APIBase}/${APIRoutes.Events}`);
-	eventsUrl.searchParams.append("guildIds", guildIds.join(","));
-	return eventsUrl.href;
-};
-
 type GuildEvents = Record<string, Events>;
 
 type GuildsReducerAction =
 	| { do: "set"; guilds: UserGuilds }
 	| { do: "unselect"; id: string }
 	| { do: "select"; id: string; events: Events }
-	| { do: "updateEvents"; events: GuildEvents };
+	| { do: "updateEvents"; id: string; events: Events };
 const guildsReducer = (state: UserGuilds, action: GuildsReducerAction) => {
 	switch (action.do) {
 		case "set":
@@ -57,9 +51,7 @@ const guildsReducer = (state: UserGuilds, action: GuildsReducerAction) => {
 		case "select":
 			return setGuildsState({ ...state, [action.id]: { ...state[action.id], events: action.events, selected: true } });
 		case "updateEvents":
-			const newState = { ...state };
-			for (const id in action.events) newState[id].events = action.events[id];
-			return setGuildsState(newState);
+			return setGuildsState({ ...state, [action.id]: { ...state[action.id], events: action.events } });
 		default:
 			throw new Error("No action specified for guildReducer!");
 	}
@@ -126,6 +118,8 @@ const dividerFix = {
 	"&::after": { position: "inherit" },
 };
 
+const fetchGuildEvents = (id: string) => fetch(`${APIBase}/${APIRoutes.Events}/?guildId=${id}`).then((result) => result.json<Events>());
+
 export const Home = () => {
 	const { headers } = useDiscordOAuth();
 
@@ -141,9 +135,7 @@ export const Home = () => {
 	const updateSelectedGuildEvents = () => {
 		const selectedGuildIds = Object.keys(guilds).filter((id) => guilds[id].selected);
 		if (selectedGuildIds.length < 1) return;
-		fetch(makeEventsUrl(selectedGuildIds))
-			.then((result) => result.json<GuildEvents>())
-			.then((events) => dispatchGuilds({ do: "updateEvents", events }));
+		selectedGuildIds.map((id) => fetchGuildEvents(id).then((events) => dispatchGuilds({ do: "updateEvents", events, id })));
 	};
 
 	const init = async () => {
@@ -185,9 +177,7 @@ export const Home = () => {
 			setModalOpen(true);
 			// If its being selected and the bot is in that guild then fetch events for that guild
 		} else {
-			fetch(makeEventsUrl([guild.id]))
-				.then((result) => result.json<GuildEvents>())
-				.then((events) => dispatchGuilds({ do: "select", id: guild.id, events: events[guild.id] }));
+			fetchGuildEvents(guild.id).then((events) => dispatchGuilds({ do: "select", id: guild.id, events }));
 		}
 	};
 
