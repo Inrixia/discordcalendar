@@ -1,5 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import * as Sentry from "@sentry/react";
+import { BrowserTracing } from "@sentry/tracing";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { DiscordOAuthProvider } from "./components/DiscordOAuthProvider";
 import { Error404 } from "./components/GenericPages";
@@ -45,6 +47,12 @@ const theme = createTheme({
 			},
 		},
 	},
+});
+
+Sentry.init({
+	dsn: "https://4f2886af890f4674ac64e5019408aac5@o1295031.ingest.sentry.io/6520025",
+	integrations: [new BrowserTracing()],
+	tracesSampleRate: 1.0,
 });
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
