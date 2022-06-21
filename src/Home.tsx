@@ -250,7 +250,8 @@ export const Home = () => {
 
 const GuildButton = ({ guild, onClick, loading }: { guild: UserGuild; onClick: () => void; loading: boolean }) => (
 	<ListItemButton key={guild.id} onClick={onClick} selected={guild.selected} dense disabled={loading}>
-		{loading ? <CircularProgress style={{ marginRight: 16 }} /> : <GuildIcon guild={guild} style={{ marginRight: 16 }} />}
+		{loading && <CircularProgress style={{ marginRight: 16, position: "absolute", zIndex: 99 }} />}
+		<GuildIcon guild={guild} style={{ marginRight: 16 }} />
 		<ListItemText id={guild.id} primary={guild.name} />
 	</ListItemButton>
 );
