@@ -30,7 +30,7 @@ events.get("/", async (req: Request, env: EnvInterface) => {
 
 	// Init cache
 	if (eventsCache === undefined) eventsCache = new WorkerLookupCache<Events>();
-	if (!eventsCache.has(guildId)) eventsCache.set(guildId, getEvents(guildId, env.auth), 30000);
+	if (!eventsCache.has(guildId)) eventsCache.set(guildId, getEvents(guildId, env.auth), 30000, 3000);
 
 	// Optional params
 	const noUsers = url.searchParams.get("noUsers") !== null;
@@ -47,7 +47,7 @@ events.get("/", async (req: Request, env: EnvInterface) => {
 		await Promise.all(
 			guildEvents.map(async (event) => {
 				const cacheId = `${event.guild_id}${event.id}`;
-				if (!eventUserCache.has(cacheId)) eventUserCache.set(cacheId, getEventUsers(event.guild_id, event.id, env.auth), 30000);
+				if (!eventUserCache.has(cacheId)) eventUserCache.set(cacheId, getEventUsers(event.guild_id, event.id, env.auth), 30000, 5000);
 				return { ...event, users: await eventUserCache.get(cacheId, forceRefresh) };
 			})
 		)
