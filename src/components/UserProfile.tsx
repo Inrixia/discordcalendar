@@ -6,7 +6,7 @@ import { imgUrl } from "../helpers";
 export const UserProfile = ({ user }: { user?: User }) => {
 	return (
 		<List>
-			<ListItem>
+			<ListItem style={{ paddingTop: 0 }}>
 				<Avatar src={user?.avatar ? imgUrl("avatars", { id: user?.id, hash: user?.avatar }) : ""} alt="" style={{ marginRight: 16 }}>
 					{user?.username[0].toUpperCase()}
 				</Avatar>

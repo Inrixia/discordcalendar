@@ -1,4 +1,4 @@
-import { Checkbox, CircularProgress, Divider, FormControlLabel, List, ListItemButton, ListItemText, Tooltip } from "@mui/material";
+import { Box, Button, Checkbox, CircularProgress, Divider, FormControlLabel, List, ListItemButton, ListItemText, Tooltip } from "@mui/material";
 import { Calendar, momentLocalizer, Event as CalendarEvent } from "react-big-calendar";
 import { useEffect, useReducer, useState } from "react";
 import moment from "moment";
@@ -17,6 +17,7 @@ import { EventModal } from "./components/EventModal";
 import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import RefreshIcon from "@mui/icons-material/Refresh";
 
 // CSS
 import "./darkcalendar.scss";
@@ -80,7 +81,8 @@ const optionsReducer = (state: Options, action: OptionsReducerAction) => {
 	}
 };
 
-const fetchGuildEvents = (id: string) => fetch(`${APIBase}/${APIRoutes.Events}/?guildId=${id}`).then((result) => result.json<Event[]>());
+const fetchGuildEvents = (id: string, forceRefresh: boolean = false) =>
+	fetch(`${APIBase}/${APIRoutes.Events}/?guildId=${id}${forceRefresh ? "&forceRefresh" : ""}`).then((result) => result.json<Event[]>());
 
 export const Home = () => {
 	const { headers } = useDiscordOAuth();
@@ -94,7 +96,7 @@ export const Home = () => {
 	const [guildModal, setGuildModal] = useState<{ open: boolean; guild?: UserGuild }>({ open: false });
 	const [eventModal, setEventModal] = useState<{ open: boolean; event?: Event; guild?: UserGuild }>({ open: false });
 
-	const init = async () => {
+	const init = async (forceRefresh: boolean = false) => {
 		// Fetch user
 		fetchWithTimeout(`${RouteBases.api}/${Routes.user()}`, { headers })
 			.then((result) => result.json<User>())
@@ -105,6 +107,7 @@ export const Home = () => {
 
 		const botGuildsUrl = new URL(`${APIBase}/${APIRoutes.Guilds}`);
 		botGuildsUrl.searchParams.append("guildIds", userGuilds.map((guild) => guild.id).join(","));
+		if (forceRefresh) botGuildsUrl.searchParams.append("forceRefresh", "");
 		// Fetch bot guilds
 		const botGuilds = await fetch(botGuildsUrl.href)
 			.then((result) => result.json<string[]>())
@@ -126,7 +129,7 @@ export const Home = () => {
 		if (selectedGuildIds.length < 1) return;
 		selectedGuildIds.map((id) => {
 			dispatchGuilds({ do: "setLoading", id });
-			fetchGuildEvents(id).then((events) => dispatchGuilds({ do: "updateEvents", events, id }));
+			fetchGuildEvents(id, forceRefresh).then((events) => dispatchGuilds({ do: "updateEvents", events, id }));
 		});
 	};
 
@@ -209,7 +212,13 @@ export const Home = () => {
 						</Tooltip>
 					</>
 				)}
-				<Divider sx={dividerFix}>Ready</Divider>
+				<Divider sx={dividerFix}>
+					<Tooltip title="Refresh">
+						<IconButton color="primary" sx={{ padding: "5px", margin: 0 }} onClick={() => init(true)}>
+							<RefreshIcon />
+						</IconButton>
+					</Tooltip>
+				</Divider>
 				<List style={{ width: 256 }}>
 					{guildArray.map((guild) => guild.calendarBotIsIn && <GuildButton loading={guild.loading} key={guild.id} guild={guild} onClick={() => onSelect(guild)} />)}
 				</List>

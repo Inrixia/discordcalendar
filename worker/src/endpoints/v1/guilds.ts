@@ -16,12 +16,13 @@ const fetchBotGuilds = (env: EnvInterface) => () =>
 
 let guildsCache: WorkerCache<Guilds>;
 guilds.get("/", async (req: Request, env: EnvInterface) => {
-	const ids = new URL(req.url).searchParams.get("guildIds");
+	const url = new URL(req.url);
+	const ids = url.searchParams.get("guildIds");
 	if (ids === null) return genericResponse(400);
 
 	// Init the cache if it doesn't exist
 	if (guildsCache === undefined) guildsCache = new WorkerCache<Guilds>(fetchBotGuilds(env), 30000);
 
-	const botGuilds = await guildsCache.get();
+	const botGuilds = await guildsCache.get(url.searchParams.get("forceRefresh") !== null);
 	return jsonResponse(ids.split(",").filter((id) => botGuilds.has(id)));
 });

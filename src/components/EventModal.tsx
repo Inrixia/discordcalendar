@@ -1,5 +1,5 @@
 import moment from "moment";
-import { CSSProperties, ReactNode, useState } from "react";
+import { useState } from "react";
 import { Typography, Modal, Box, Card, CardMedia, Tab, IconButton } from "@mui/material";
 import { TabContext, TabList } from "@mui/lab";
 import TabPanel from "@mui/lab/TabPanel";
@@ -18,6 +18,7 @@ import type { Event, UserGuild } from "../types";
 import TodayIcon from "@mui/icons-material/Today";
 import PeopleAltIcon from "@mui/icons-material/PeopleAlt";
 import CloseIcon from "@mui/icons-material/Close";
+import { IconText } from "./IconText";
 
 type AddGuildModalProps = { modalOpen: boolean; onClose: () => void; event: Event; guild: UserGuild };
 
@@ -125,17 +126,3 @@ export const EventModal = ({ modalOpen, onClose, event, guild }: AddGuildModalPr
 		</Modal>
 	);
 };
-
-const IconText = ({ text, icon, style }: { text: ReactNode; icon: ReactNode; style?: CSSProperties }) => (
-	<div
-		style={{
-			display: "flex",
-			alignItems: "center",
-			flexWrap: "wrap",
-			...style,
-		}}
-	>
-		{icon}
-		<span>{text}</span>
-	</div>
-);
