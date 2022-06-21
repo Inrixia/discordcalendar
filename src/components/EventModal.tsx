@@ -28,7 +28,6 @@ export const EventModal = ({ modalOpen, onClose, event, guild }: AddGuildModalPr
 	const momentStart = moment(event.scheduled_start_time);
 
 	const { creator } = event;
-	console.log(event);
 
 	return (
 		<Modal
@@ -87,7 +86,7 @@ export const EventModal = ({ modalOpen, onClose, event, guild }: AddGuildModalPr
 									text={
 										<>
 											{`Created by `}
-											<span style={{ color: "#b9dfff" }}>{creator?.username}</span>
+											<span style={{ color: "#b9dfff" }}>{event.users.find(({ user }) => user.id === creator.id)?.member?.nick || creator.username}</span>
 										</>
 									}
 									icon={<UserAvatar style={{ marginRight: 8 }} user={creator} size={24} />}
