@@ -10,7 +10,7 @@ export const GuildIcon = ({ guild, size, style }: { guild: Guild; size?: number;
 		placement="right"
 		componentsProps={{ tooltip: { style: { background: "#18191C" } }, arrow: { style: { color: "#18191C" } } }}
 	>
-		<Avatar src={guild.icon ? imgUrl("icons", guild.id, guild.icon) : ""} style={{ width: size, height: size, ...style }}>
+		<Avatar src={guild.icon ? imgUrl("icons", { id: guild.id, hash: guild.icon }) : ""} style={{ width: size, height: size, ...style }}>
 			{guild.name[0].toUpperCase()}
 		</Avatar>
 	</Tooltip>

@@ -6,12 +6,40 @@ export type ImageSize = 16 | 32 | 64 | 128 | 256 | 512 | 1024 | 2048 | 4096;
 export type ImageFormat = "jpg" | "png" | "webp" | "gif";
 export type CDNBase = "icons" | "emojis" | "avatars" | "app-icons" | "guild-events";
 
-export const imgUrl = (base: CDNBase = "icons", id: string, hash: string, size: ImageSize = 64, format: ImageFormat = "gif"): string => {
+type ImgUrlParams = {
+	id: string;
+	hash: string;
+	size?: ImageSize;
+	format?: ImageFormat;
+};
+type ImgUrlParamsExtended = {
+	id: string;
+	hash: string;
+	guildId: string;
+	size?: ImageSize;
+	format?: ImageFormat;
+};
+export function imgUrl(base: "guilds", params: ImgUrlParamsExtended): string;
+export function imgUrl(base: CDNBase, params: ImgUrlParams): string;
+export function imgUrl(
+	base: "guilds" | CDNBase,
+	{
+		id,
+		hash,
+		// @ts-expect-error It complains about this not existing but its fine, we are overloading the function
+		guildId,
+		size,
+		format,
+	}: ImgUrlParamsExtended | ImgUrlParams
+): string {
+	if (format === undefined) format = "gif";
+	if (size === undefined) size = 64;
 	// In the case of endpoints that support GIFs, the hash will begin with a_ if it is available in GIF format.
 	// If not default to webp
 	if (!hash.startsWith("a_")) format = "webp";
+	if (base === "guilds") return `${RouteBases.cdn}/${base}/${guildId}/users/${id}/avatars/${hash}.${format}`;
 	return `${RouteBases.cdn}/${base}/${id}/${hash}.${format}?size=${size}`;
-};
+}
 
 export const APIBase = "https://api.discordcalendar.com";
 export const APIRoutes = {

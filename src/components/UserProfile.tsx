@@ -7,7 +7,7 @@ export const UserProfile = ({ user }: { user?: User }) => {
 	return (
 		<List>
 			<ListItem>
-				<Avatar src={user?.avatar ? imgUrl("avatars", user?.id, user?.avatar) : ""} alt="" style={{ marginRight: 16 }}>
+				<Avatar src={user?.avatar ? imgUrl("avatars", { id: user?.id, hash: user?.avatar }) : ""} alt="" style={{ marginRight: 16 }}>
 					{user?.username[0].toUpperCase()}
 				</Avatar>
 				<ListItemText

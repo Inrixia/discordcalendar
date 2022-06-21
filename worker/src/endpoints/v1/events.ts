@@ -17,7 +17,7 @@ const getEvents = (guildId: string, Authorization: string) => () =>
 	fetchWithTimeout(`${RouteBases.api}/${Routes.guildScheduledEvents(guildId)}`, { headers: { Authorization } }).then((res) => res.json<Events>());
 
 const getEventUsers = (guildId: string, eventId: string, Authorization: string) => () =>
-	fetchWithTimeout(`${RouteBases.api}/${Routes.guildScheduledEventUsers(guildId, eventId)}`, { headers: { Authorization } }).then((res) =>
+	fetchWithTimeout(`${RouteBases.api}/${Routes.guildScheduledEventUsers(guildId, eventId)}?with_member=true`, { headers: { Authorization } }).then((res) =>
 		res.json<EventUsers>()
 	);
 

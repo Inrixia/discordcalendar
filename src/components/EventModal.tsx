@@ -27,6 +27,7 @@ export const EventModal = ({ modalOpen, onClose, event, guild }: AddGuildModalPr
 	const momentStart = moment(event.scheduled_start_time);
 
 	const { creator } = event;
+	console.log(event);
 
 	return (
 		<Modal
@@ -54,7 +55,7 @@ export const EventModal = ({ modalOpen, onClose, event, guild }: AddGuildModalPr
 				>
 					<CloseIcon />
 				</IconButton>
-				{event.image && <CardMedia component="img" image={imgUrl("guild-events", event.id, event.image, 512)} />}
+				{event.image && <CardMedia component="img" image={imgUrl("guild-events", { id: event.id, hash: event.image, size: 512 })} />}
 				<TabContext value={tabValue}>
 					<Box sx={{ borderBottom: 1, borderColor: "divider", width: "100%" }}>
 						<TabList onChange={(e, newValue: string) => setTabValue(newValue)}>
@@ -98,8 +99,24 @@ export const EventModal = ({ modalOpen, onClose, event, guild }: AddGuildModalPr
 					</TabPanel>
 					<TabPanel value="interested">
 						<Box sx={{ height: 260, overflow: "scroll", "&&::-webkit-scrollbar": { display: "none" } }}>
-							{event.users.map(({ user }) => (
-								<IconText key={user.id} text={user.username} icon={<UserAvatar style={{ marginRight: 8 }} user={user} size={24} />} style={{ marginBottom: 12 }} />
+							{event.users.map(({ user, member }) => (
+								<IconText
+									key={user.id}
+									text={member?.nick || user.username}
+									icon={
+										<UserAvatar
+											style={{ marginRight: 8 }}
+											user={{
+												id: user.id,
+												avatar: member?.avatar || user.avatar,
+												username: member?.nick || user.username,
+												guildId: member?.avatar ? guild.id : undefined,
+											}}
+											size={24}
+										/>
+									}
+									style={{ marginBottom: 12 }}
+								/>
 							))}
 						</Box>
 					</TabPanel>
