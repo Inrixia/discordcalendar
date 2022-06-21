@@ -88,8 +88,7 @@ export const Home = () => {
 	// Viewstates
 	const [drawerOpen, setDrawerOpen] = useState(false);
 
-	const [modalOpen, setModalOpen] = useState(false);
-	const [modalGuild, setModalGuild] = useState<Guild>();
+	const [guildModal, setGuildModal] = useState<{ open: boolean; guild?: Guild }>({ open: false });
 
 	const updateSelectedGuildEvents = () => {
 		const selectedGuildIds = Object.keys(guilds).filter((id) => guilds[id].selected);
@@ -137,8 +136,7 @@ export const Home = () => {
 		if (guild.selected) dispatchGuilds({ do: "unselect", id: guild.id });
 		// If its being selected but the bot is not in that guild then prompt to add
 		else if (!guild.calendarBotIsIn) {
-			setModalGuild(guild);
-			setModalOpen(true);
+			setGuildModal({ guild, open: true });
 			// If its being selected and the bot is in that guild then fetch events for that guild
 		} else {
 			fetchGuildEvents(guild.id).then((events) => dispatchGuilds({ do: "select", id: guild.id, events }));
@@ -146,7 +144,7 @@ export const Home = () => {
 	};
 
 	const onSelectEvent = (event: CalendarEvent) => {
-		const discordEvent = guilds;
+		console.log("clicky!");
 	};
 
 	const guildArray = Object.values(guilds);
@@ -208,12 +206,12 @@ export const Home = () => {
 				<List style={{ width: 256 }}>{guildArray.map((guild) => !guild.calendarBotIsIn && <GuildButton guild={guild} onClick={() => onSelect(guild)} />)}</List>
 			</Drawer>
 			<GuildModal
-				modalOpen={modalOpen}
+				modalOpen={guildModal.open}
 				onClose={(refresh) => {
-					setModalOpen(false);
+					setGuildModal({ open: false });
 					if (refresh) init();
 				}}
-				guild={modalGuild}
+				guild={guildModal.guild}
 			/>
 			<Calendar
 				dayLayoutAlgorithm="overlap"

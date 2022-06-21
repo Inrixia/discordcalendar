@@ -1,7 +1,9 @@
-import { RESTAPIPartialCurrentUserGuild as Guild } from "discord-api-types/v10";
 import { Typography, Tooltip, Modal, Box, useTheme, Button } from "@mui/material";
 import { GuildIcon } from "./GuildIcon";
 import { clientId } from "../helpers";
+
+// Types
+import type { RESTAPIPartialCurrentUserGuild as Guild } from "discord-api-types/v10";
 
 const redirectURL = new URL(`https://discord.com/oauth2/authorize`);
 redirectURL.searchParams.append("client_id", clientId);
