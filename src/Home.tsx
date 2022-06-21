@@ -1,4 +1,4 @@
-import { Checkbox, Divider, FormControlLabel, List, ListItemButton, ListItemText, Tooltip } from "@mui/material";
+import { Checkbox, CircularProgress, Divider, FormControlLabel, List, ListItemButton, ListItemText, Tooltip } from "@mui/material";
 import { Calendar, momentLocalizer, Event as CalendarEvent } from "react-big-calendar";
 import { useEffect, useReducer, useState } from "react";
 import moment from "moment";
@@ -28,7 +28,7 @@ import { fetchWithTimeout } from "@inrixia/cfworker-helpers";
 
 // Types
 import type { UserGuilds, Event, UserGuild } from "./types";
-import type { RESTAPIPartialCurrentUserGuild as Guild, RESTGetAPICurrentUserGuildsResult as Guilds, RESTGetAPIUserResult as User } from "discord-api-types/v10";
+import type { RESTGetAPICurrentUserGuildsResult as Guilds, RESTGetAPIUserResult as User } from "discord-api-types/v10";
 
 const localizer = momentLocalizer(moment);
 const { Drawer } = getDrawerHelpers(256);
@@ -36,8 +36,9 @@ const { Drawer } = getDrawerHelpers(256);
 type GuildsReducerAction =
 	| { do: "set"; guilds: UserGuilds }
 	| { do: "unselect"; id: string }
-	| { do: "select"; id: string; events: Event[] }
-	| { do: "updateEvents"; id: string; events: Event[] };
+	| { do: "select"; id: string }
+	| { do: "updateEvents"; id: string; events: Event[] }
+	| { do: "setLoading"; id: string };
 const guildsReducer = (state: UserGuilds, action: GuildsReducerAction) => {
 	switch (action.do) {
 		case "set":
@@ -45,9 +46,11 @@ const guildsReducer = (state: UserGuilds, action: GuildsReducerAction) => {
 		case "unselect":
 			return setGuildsState({ ...state, [action.id]: { ...state[action.id], selected: false, events: [] } });
 		case "select":
-			return setGuildsState({ ...state, [action.id]: { ...state[action.id], events: action.events, selected: true } });
+			return setGuildsState({ ...state, [action.id]: { ...state[action.id], selected: true, loading: true } });
+		case "setLoading":
+			return setGuildsState({ ...state, [action.id]: { ...state[action.id], loading: true } });
 		case "updateEvents":
-			return setGuildsState({ ...state, [action.id]: { ...state[action.id], events: action.events } });
+			return setGuildsState({ ...state, [action.id]: { ...state[action.id], events: action.events, loading: false } });
 		default:
 			throw new Error("No action specified for guildReducer!");
 	}
@@ -91,12 +94,6 @@ export const Home = () => {
 	const [guildModal, setGuildModal] = useState<{ open: boolean; guild?: UserGuild }>({ open: false });
 	const [eventModal, setEventModal] = useState<{ open: boolean; event?: Event; guild?: UserGuild }>({ open: false });
 
-	const updateSelectedGuildEvents = () => {
-		const selectedGuildIds = Object.keys(guilds).filter((id) => guilds[id].selected);
-		if (selectedGuildIds.length < 1) return;
-		selectedGuildIds.map((id) => fetchGuildEvents(id).then((events) => dispatchGuilds({ do: "updateEvents", events, id })));
-	};
-
 	const init = async () => {
 		// Fetch user
 		fetchWithTimeout(`${RouteBases.api}/${Routes.user()}`, { headers })
@@ -117,15 +114,20 @@ export const Home = () => {
 
 		for (const guild of userGuilds) {
 			const calendarBotIsIn = botGuilds.has(guild.id);
-			if (!calendarBotIsIn) _guilds[guild.id] = { ...guild, calendarBotIsIn, selected: false, events: [] };
+			if (!calendarBotIsIn) _guilds[guild.id] = { ...guild, calendarBotIsIn, selected: false, events: [], loading: false };
 			else {
 				const selected = guilds[guild.id]?.selected || false;
 				const events = guilds[guild.id]?.events || [];
-				_guilds[guild.id] = { ...guild, calendarBotIsIn, selected, events };
+				_guilds[guild.id] = { ...guild, calendarBotIsIn, selected, events, loading: false };
 			}
 		}
 		dispatchGuilds({ do: "set", guilds: _guilds });
-		updateSelectedGuildEvents();
+		const selectedGuildIds = Object.keys(guilds).filter((id) => guilds[id].selected);
+		if (selectedGuildIds.length < 1) return;
+		selectedGuildIds.map((id) => {
+			dispatchGuilds({ do: "setLoading", id });
+			fetchGuildEvents(id).then((events) => dispatchGuilds({ do: "updateEvents", events, id }));
+		});
 	};
 
 	useEffect(() => {
@@ -140,7 +142,8 @@ export const Home = () => {
 			setGuildModal({ guild, open: true });
 			// If its being selected and the bot is in that guild then fetch events for that guild
 		} else {
-			fetchGuildEvents(guild.id).then((events) => dispatchGuilds({ do: "select", id: guild.id, events }));
+			dispatchGuilds({ do: "select", id: guild.id });
+			fetchGuildEvents(guild.id).then((events) => dispatchGuilds({ do: "updateEvents", id: guild.id, events }));
 		}
 	};
 
@@ -208,11 +211,11 @@ export const Home = () => {
 				)}
 				<Divider sx={dividerFix}>Ready</Divider>
 				<List style={{ width: 256 }}>
-					{guildArray.map((guild) => guild.calendarBotIsIn && <GuildButton key={guild.id} guild={guild} onClick={() => onSelect(guild)} />)}
+					{guildArray.map((guild) => guild.calendarBotIsIn && <GuildButton loading={guild.loading} key={guild.id} guild={guild} onClick={() => onSelect(guild)} />)}
 				</List>
 				<Divider sx={dividerFix}>Missing Bot</Divider>
 				<List style={{ width: 256 }}>
-					{guildArray.map((guild) => !guild.calendarBotIsIn && <GuildButton key={guild.id} guild={guild} onClick={() => onSelect(guild)} />)}
+					{guildArray.map((guild) => !guild.calendarBotIsIn && <GuildButton loading={guild.loading} key={guild.id} guild={guild} onClick={() => onSelect(guild)} />)}
 				</List>
 			</Drawer>
 			{guildModal.open && (
@@ -245,9 +248,9 @@ export const Home = () => {
 	);
 };
 
-const GuildButton = ({ guild, onClick }: { guild: UserGuild; onClick: () => void }) => (
-	<ListItemButton key={guild.id} onClick={onClick} selected={guild.selected} dense>
-		<GuildIcon guild={guild} style={{ marginRight: 16 }} />
+const GuildButton = ({ guild, onClick, loading }: { guild: UserGuild; onClick: () => void; loading: boolean }) => (
+	<ListItemButton key={guild.id} onClick={onClick} selected={guild.selected} dense disabled={loading}>
+		{loading ? <CircularProgress style={{ marginRight: 16 }} /> : <GuildIcon guild={guild} style={{ marginRight: 16 }} />}
 		<ListItemText id={guild.id} primary={guild.name} />
 	</ListItemButton>
 );

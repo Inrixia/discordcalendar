@@ -7,5 +7,5 @@ import type { ValueOfA } from "@inrixia/helpers/ts";
 
 export type Event = ValueOfA<Events> & { users: EventUsers };
 
-export type UserGuild = Guild & { calendarBotIsIn: boolean; selected: boolean; events: Event[] };
+export type UserGuild = Guild & { calendarBotIsIn: boolean; selected: boolean; events: Event[]; loading: boolean };
 export type UserGuilds = Record<string, UserGuild>;
