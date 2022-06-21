@@ -1,24 +1,12 @@
-import { useEffect, useReducer, useState } from "react";
-import { useDiscordOAuth } from "./components/DiscordOAuthProvider";
-
-import {
-	Routes,
-	RouteBases,
-	RESTAPIPartialCurrentUserGuild as Guild,
-	RESTGetAPICurrentUserGuildsResult as Guilds,
-	RESTGetAPIGuildScheduledEventsResult as Events,
-	RESTGetAPIGuildScheduledEventUsersResult as EventUsers,
-} from "discord-api-types/v10";
-
-import { APIBase, APIRoutes, getLocalStorage } from "./helpers";
-import { fetchWithTimeout } from "@inrixia/cfworker-helpers";
-
-import "react-big-calendar/lib/css/react-big-calendar.css";
-import { Calendar, momentLocalizer, Event as CalendarEvent } from "react-big-calendar";
-import moment from "moment";
 import { Checkbox, Divider, FormControlLabel, List, ListItemButton, ListItemText, Tooltip } from "@mui/material";
+import { Calendar, momentLocalizer, Event as CalendarEvent } from "react-big-calendar";
+import { useEffect, useReducer, useState } from "react";
+import moment from "moment";
+
+import { Routes, RouteBases } from "discord-api-types/v10";
 
 // Components
+import { useDiscordOAuth } from "./components/DiscordOAuthProvider";
 import { getDrawerHelpers } from "./components/Drawer";
 import { UserProfile } from "./components/UserProfile";
 import { GuildIcon } from "./components/GuildIcon";
@@ -32,16 +20,17 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 // CSS
 import "./darkcalendar.scss";
 
+// Helpers
+import { buildCalendarObjects } from "./buildCalendarObjects";
+import { APIBase, APIRoutes, dividerFix, getLocalStorage } from "./helpers";
+import { fetchWithTimeout } from "@inrixia/cfworker-helpers";
+
 // Types
-import type { ValueOfA } from "@inrixia/helpers/ts";
+import type { UserGuilds, Event, UserGuild } from "./types";
+import type { RESTAPIPartialCurrentUserGuild as Guild, RESTGetAPICurrentUserGuildsResult as Guilds } from "discord-api-types/v10";
 
 const localizer = momentLocalizer(moment);
 const { Drawer } = getDrawerHelpers(256);
-
-type Event = ValueOfA<Events> & { users: EventUsers };
-
-type UserGuild = Guild & { calendarBotIsIn: boolean; selected: boolean; events: Event[] };
-type UserGuilds = Record<string, UserGuild>;
 
 type GuildsReducerAction =
 	| { do: "set"; guilds: UserGuilds }
@@ -85,44 +74,6 @@ const optionsReducer = (state: Options, action: OptionsReducerAction) => {
 		default:
 			throw new Error("No action specified for optionsReducer!");
 	}
-};
-
-const buildCalendarObjects = (userGuilds: UserGuild[]) => {
-	const guilds = userGuilds.filter((guild) => guild.events.length > 0);
-
-	const events = guilds.flatMap((guild) =>
-		(guild.events || []).map(
-			(event): CalendarEvent => ({
-				title: (
-					<div style={{ display: "flex" }}>
-						<GuildIcon guild={guild} size={24} style={{ marginRight: 4 }} />
-						{event.name}
-					</div>
-				),
-				start: event.scheduled_start_time ? new Date(event.scheduled_start_time) : undefined,
-				end: event.scheduled_end_time ? new Date(event.scheduled_end_time) : new Date(new Date(event.scheduled_start_time).getTime() + 1000 * 60 * 60),
-				// @ts-expect-error Yea the types seem wrong for this, its resourceId. Also adding discordEventId here for convenience
-				resourceId: guild.id,
-				discordEventId: event.id,
-			})
-		)
-	);
-	const resources = guilds.map((guild) => ({
-		id: guild.id,
-		name: (
-			<div style={{ display: "flex" }}>
-				<GuildIcon guild={guild} size={24} style={{ marginRight: 4 }} />
-				{guild.name}
-			</div>
-		),
-	}));
-
-	return { events, resources };
-};
-
-const dividerFix = {
-	"&::before": { position: "inherit" },
-	"&::after": { position: "inherit" },
 };
 
 const fetchGuildEvents = (id: string) => fetch(`${APIBase}/${APIRoutes.Events}/?guildId=${id}`).then((result) => result.json<Event[]>());
@@ -193,7 +144,6 @@ export const Home = () => {
 	};
 
 	const guildArray = Object.values(guilds);
-
 	const { events, resources } = buildCalendarObjects(guildArray);
 
 	return (

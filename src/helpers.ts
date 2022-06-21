@@ -28,3 +28,8 @@ export const getLocalStorage = <S extends any>(key: string, defaultState: S): S 
 	}
 	return defaultState;
 };
+
+export const dividerFix = {
+	"&::before": { position: "inherit" },
+	"&::after": { position: "inherit" },
+};
