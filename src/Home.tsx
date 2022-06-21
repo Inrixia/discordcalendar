@@ -76,8 +76,15 @@ const getGuildsState = () => {
 	let guildsStateString = localStorage.getItem("guilds");
 	if (guildsStateString !== null) {
 		try {
-			guildsState = JSON.parse(guildsStateString);
+			guildsState = cleanOldState(JSON.parse(guildsStateString));
 		} catch {}
+	}
+	return guildsState;
+};
+const cleanOldState = (guildsState: UserGuilds) => {
+	for (const id in guildsState) {
+		// Reset events on unselected guilds
+		if (!guildsState[id].selected) guildsState[id].events = [];
 	}
 	return guildsState;
 };
@@ -98,8 +105,9 @@ const buildCalendarEvents = (guilds: UserGuilds) =>
 				),
 				start: event.scheduled_start_time ? new Date(event.scheduled_start_time) : undefined,
 				end: event.scheduled_end_time ? new Date(event.scheduled_end_time) : new Date(new Date(event.scheduled_start_time).getTime() + 1000 * 60 * 60),
-				// @ts-expect-error Yea the types seem wrong for this, its resourceId
+				// @ts-expect-error Yea the types seem wrong for this, its resourceId. Also adding discordEventId here for convenience
 				resourceId: guild.id,
+				discordEventId: event.id,
 			})
 		)
 	);
@@ -181,6 +189,10 @@ export const Home = () => {
 		}
 	};
 
+	const onSelectEvent = (event: CalendarEvent) => {
+		const discordEvent = guilds;
+	};
+
 	return (
 		<div style={{ display: "flex" }}>
 			<Drawer variant="permanent" open={drawerOpen} PaperProps={{ style: { background: "#202225" } }}>
@@ -252,6 +264,7 @@ export const Home = () => {
 				resourceIdAccessor="id"
 				resourceTitleAccessor="name"
 				step={60}
+				onSelectEvent={onSelectEvent}
 				style={{ height: "100vh", width: "100%", padding: 16 }}
 			/>
 		</div>
