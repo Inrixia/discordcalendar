@@ -40,7 +40,7 @@ events.get("/", async (req: Request, env: EnvInterface) => {
 	const guildEvents = await eventsCache.get(guildId);
 
 	if (noUsers) return jsonResponse(guildEvents);
-	if (eventUserCache === undefined) eventUserCache = new WorkerLookupCache<EventUsers>(env.discordApiCache, "eventUsers");
+	if (eventUserCache === undefined) eventUserCache = new WorkerLookupCache<EventUsers>(env.discordApiCache, "eventUsers", 300);
 
 	// Fetch the users for each event
 	return jsonResponse(
