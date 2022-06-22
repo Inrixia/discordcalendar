@@ -29,26 +29,26 @@ events.get("/", async (req: Request, env: EnvInterface) => {
 	if (guildId === null) return genericResponse(400);
 
 	// Init cache
-	if (eventsCache === undefined) eventsCache = new WorkerLookupCache<Events>();
-	if (!eventsCache.has(guildId)) eventsCache.set(guildId, getEvents(guildId, env.auth), 30000, 3000);
+	if (eventsCache === undefined) eventsCache = new WorkerLookupCache<Events>(env.discordApiCache, "guildEvents");
+	if (!eventsCache.has(guildId)) eventsCache.set(guildId, getEvents(guildId, env.auth));
 
 	// Optional params
 	const noUsers = url.searchParams.get("noUsers") !== null;
 	const forceRefresh = url.searchParams.get("forceRefresh") !== null;
 
 	// Fetch guild events
-	const guildEvents = await eventsCache.get(guildId, forceRefresh);
+	const guildEvents = await eventsCache.get(guildId);
 
 	if (noUsers) return jsonResponse(guildEvents);
-	if (eventUserCache === undefined) eventUserCache = new WorkerLookupCache<EventUsers>();
+	if (eventUserCache === undefined) eventUserCache = new WorkerLookupCache<EventUsers>(env.discordApiCache, "eventUsers");
 
 	// Fetch the users for each event
 	return jsonResponse(
 		await Promise.all(
 			guildEvents.map(async (event) => {
-				const cacheId = `${event.guild_id}${event.id}`;
-				if (!eventUserCache.has(cacheId)) eventUserCache.set(cacheId, getEventUsers(event.guild_id, event.id, env.auth), 30000, 5000);
-				return { ...event, users: await eventUserCache.get(cacheId, forceRefresh) };
+				const cacheId = `${event.guild_id}/${event.id}`;
+				if (!eventUserCache.has(cacheId)) eventUserCache.set(cacheId, getEventUsers(event.guild_id, event.id, env.auth));
+				return { ...event, users: await eventUserCache.get(cacheId) };
 			})
 		)
 	);

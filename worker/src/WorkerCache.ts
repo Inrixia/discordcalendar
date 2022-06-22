@@ -1,33 +1,27 @@
 export type WCGenerator<Value> = () => Promise<Value> | Value;
 
 export class WorkerCache<CacheValue> {
-	private value: CacheValue | Promise<CacheValue>;
-
 	private generator: WCGenerator<CacheValue>;
-	private ttl: number;
-	private deathDate: number;
-	private regenCooldown?: number;
-	private regenDate: number;
 
-	constructor(generator: WCGenerator<CacheValue>, ttl: number, regenCooldown?: number) {
+	public ttl: number;
+	public regenCooldown?: number;
+
+	private kv: KVNamespace;
+	private key: string;
+
+	constructor(generator: WCGenerator<CacheValue>, kv: KVNamespace, key: string, ttl: number = 60) {
 		this.generator = generator;
 		this.ttl = ttl;
-		this.deathDate = 0;
-		this.value = generator();
-		this.regenCooldown = regenCooldown;
-		this.regenDate = 0;
+		this.kv = kv;
+		this.key = key;
 	}
 
-	public get(reGenerate?: boolean) {
-		// If requesting to regen, dont allow to do so if still on cooldown
-		if (this.regenCooldown !== undefined && reGenerate) {
-			if (this.regenDate > Date.now()) reGenerate = false;
-			else this.regenDate = Date.now() + this.regenCooldown;
-		}
-		if (reGenerate === true || this.deathDate < Date.now()) {
-			this.value = this.generator();
-			this.deathDate = Date.now() + this.ttl;
-		}
-		return this.value;
+	public async get() {
+		const kvValue = await this.kv.get<CacheValue>(this.key, "json");
+		if (kvValue !== null) return kvValue;
+
+		const newValue = await this.generator();
+		await this.kv.put(this.key, JSON.stringify(newValue), { expirationTtl: this.ttl });
+		return newValue;
 	}
 }

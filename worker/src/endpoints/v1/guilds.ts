@@ -8,11 +8,11 @@ import type { EnvInterface } from "../../types";
 
 export const guilds = Router({ base: "/v1/guilds" });
 
-type Guilds = Set<string>;
+type Guilds = Record<string, 0>;
 const fetchBotGuilds = (env: EnvInterface) => () =>
 	fetchWithTimeout(`${RouteBases.api}/${Routes.userGuilds()}`, { headers: { Authorization: env.auth } })
 		.then((res) => res.json<RESTGetAPICurrentUserGuildsResult>())
-		.then((guilds) => new Set(guilds.map((guild) => guild.id)));
+		.then((guilds) => guilds.reduce((guilds, guild) => ({ ...guilds, [guild.id]: 0 }), {}));
 
 let guildsCache: WorkerCache<Guilds>;
 guilds.get("/", async (req: Request, env: EnvInterface) => {
@@ -21,8 +21,8 @@ guilds.get("/", async (req: Request, env: EnvInterface) => {
 	if (ids === null) return genericResponse(400);
 
 	// Init the cache if it doesn't exist
-	if (guildsCache === undefined) guildsCache = new WorkerCache<Guilds>(fetchBotGuilds(env), 30000, 5000);
+	if (guildsCache === undefined) guildsCache = new WorkerCache<Guilds>(fetchBotGuilds(env), env.discordApiCache, "botGuilds");
 
-	const botGuilds = await guildsCache.get(url.searchParams.get("forceRefresh") !== null);
-	return jsonResponse(ids.split(",").filter((id) => botGuilds.has(id)));
+	const botGuilds = await guildsCache.get();
+	return jsonResponse(ids.split(",").filter((id) => botGuilds[id] !== undefined));
 });

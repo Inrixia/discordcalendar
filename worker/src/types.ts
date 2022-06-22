@@ -9,6 +9,9 @@ export interface EnvInterface {
 
 	// Discord API
 	auth: string;
+
+	// Keyvaults
+	discordApiCache: KVNamespace;
 }
 
 export const JWKUMK = "https://safetyabilitytests.com/user";

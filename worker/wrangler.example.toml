@@ -6,6 +6,10 @@ route = "api.discordcalendar.com/*"
 
 compatibility_date = "2022-06-16"
 
+kv_namespaces = [
+	{ binding = "discordApiCache", id = "" }
+]
+
 [build]
 command = "npm install && npm run build"
 [build.upload]
